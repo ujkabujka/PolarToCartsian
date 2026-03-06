@@ -19,11 +19,11 @@ public static class InterpolationPerformanceTest
         stopwatch.Stop();
 
         return new PerformanceResult(
-            ringCount: rings.Count,
-            gridSize: 400,
-            elapsedMilliseconds: stopwatch.Elapsed.TotalMilliseconds,
-            sampleCenterTemperature: grid[200, 200],
-            sampleCornerTemperature: grid[0, 0]);
+            rings.Count,
+            400,
+            stopwatch.Elapsed.TotalMilliseconds,
+            grid[200, 200],
+            grid[0, 0]);
     }
 
     public static List<RadiusValues> BuildSyntheticRings(
