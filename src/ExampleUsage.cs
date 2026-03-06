@@ -32,3 +32,22 @@ public static class ExampleUsage
         return interpolator.BuildCartesianTemperatureGrid(400);
     }
 }
+
+public static class HeatMapExampleUsage
+{
+    public static HeatMapRenderData CreateHeatMapRenderData(double cutoff = 0.1)
+    {
+        var grid = ExampleUsage.Create400By400SampleGrid();
+        var control = new CartesianHeatMapControl(cutoff);
+        control.SetGrid(grid);
+        return control.BuildRenderData();
+    }
+
+    public static HeatMapProbeResult? ProbeSamplePoint(double pixelX, double pixelY, double cutoff = 0.1)
+    {
+        var grid = ExampleUsage.Create400By400SampleGrid();
+        var control = new CartesianHeatMapControl(cutoff);
+        control.SetGrid(grid);
+        return control.ProbeAtPixel(pixelX, pixelY);
+    }
+}
