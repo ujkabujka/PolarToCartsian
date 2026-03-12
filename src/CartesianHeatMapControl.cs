@@ -93,7 +93,7 @@ public sealed class CartesianHeatMapControl
             angle,
             temperature,
             color,
-            isBelowCutoff: !double.IsNaN(temperature) && temperature < Cutoff);
+            IsBelowCutoff: !double.IsNaN(temperature) && temperature < Cutoff);
     }
 
     public IReadOnlyList<LegendStop> BuildLegend(int stepCount = 5)
