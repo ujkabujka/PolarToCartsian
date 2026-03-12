@@ -135,3 +135,11 @@ Ayrıca VS Code için hazır:
 
 - `.vscode/tasks.json` (`build-wpf-demo`, `run-wpf-demo`)
 - `.vscode/launch.json` (`.NET Launch WPF Demo`)
+
+### Testler
+
+Heat map kontrolü için temel davranış testleri eklendi (`tests/PolarToCartesianInterpolator.Tests`).
+
+```powershell
+dotnet test .\tests\PolarToCartesianInterpolator.Tests\PolarToCartesianInterpolator.Tests.csproj
+```
