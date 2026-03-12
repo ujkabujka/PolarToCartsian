@@ -107,3 +107,39 @@ if (probe is not null)
 }
 ```
 - Radius aralığı dışındaki noktalar interpolasyonda `double.NaN` döner; senaryo testinde convolution öncesi bu değerler `0` ile normalize edilir.
+
+## WPF Heat Map Demo
+
+Repoya `PolarToCartsian.sln` çözümü ve `PolarToCartesianInterpolator.WpfDemo` isminde bir WPF demo projesi eklendi.
+
+- `Controls/CartesianHeatMapView`: `double[,]` grid alır ve `CartesianHeatMapControl` üzerinden renkleri hesaplayıp bitmap olarak çizer.
+- `MainWindow`: Açılışta `ExampleUsage.Create400By400SampleGrid()` ile örnek grid yükleyip kontrolü varsayılan olarak gösterir.
+
+### VS Code ile çalıştırma
+
+> Not: WPF yalnızca Windows'ta çalışır.
+
+1. Çözümü build edin:
+
+```powershell
+dotnet build .\PolarToCartsian.sln
+```
+
+2. Demo uygulamayı başlatın:
+
+```powershell
+dotnet run --project .\PolarToCartesianInterpolator.WpfDemo\PolarToCartesianInterpolator.WpfDemo.csproj
+```
+
+Ayrıca VS Code için hazır:
+
+- `.vscode/tasks.json` (`build-wpf-demo`, `run-wpf-demo`)
+- `.vscode/launch.json` (`.NET Launch WPF Demo`)
+
+### Testler
+
+Heat map kontrolü için temel davranış testleri eklendi (`tests/PolarToCartesianInterpolator.Tests`).
+
+```powershell
+dotnet test .\tests\PolarToCartesianInterpolator.Tests\PolarToCartesianInterpolator.Tests.csproj
+```

@@ -14,6 +14,7 @@ public sealed class CartesianHeatMapControl
     private double[,] _grid = new double[0, 0];
     private int _gridWidth;
     private int _gridHeight;
+    private double _cutoff = 0.1;
 
     public CartesianHeatMapControl(double cutoff = 0.1)
     {
@@ -22,13 +23,13 @@ public sealed class CartesianHeatMapControl
 
     public double Cutoff
     {
-        get;
+        get => _cutoff;
         set
         {
             if (value is < 0 or > 1)
                 throw new ArgumentOutOfRangeException(nameof(value), "Cutoff 0 ile 1 arasında olmalıdır.");
 
-            field = value;
+            _cutoff = value;
         }
     }
 
@@ -92,7 +93,7 @@ public sealed class CartesianHeatMapControl
             angle,
             temperature,
             color,
-            isBelowCutoff: !double.IsNaN(temperature) && temperature < Cutoff);
+            IsBelowCutoff: !double.IsNaN(temperature) && temperature < Cutoff);
     }
 
     public IReadOnlyList<LegendStop> BuildLegend(int stepCount = 5)
