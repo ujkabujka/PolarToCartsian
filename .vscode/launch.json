@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Launch WPF Demo",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-wpf-demo",
+      "program": "${workspaceFolder}/PolarToCartesianInterpolator.WpfDemo/bin/Debug/net8.0-windows/PolarToCartesianInterpolator.WpfDemo.exe",
+      "cwd": "${workspaceFolder}/PolarToCartesianInterpolator.WpfDemo",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ]
+}

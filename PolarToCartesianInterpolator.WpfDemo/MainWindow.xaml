@@ -1,0 +1,34 @@
+<Window x:Class="PolarToCartesianInterpolator.WpfDemo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:PolarToCartesianInterpolator.WpfDemo.Controls"
+        mc:Ignorable="d"
+        Title="Cartesian Heat Map Demo"
+        Width="900"
+        Height="700"
+        MinWidth="650"
+        MinHeight="500"
+        Background="#0F172A">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="Cartesian Heat Map Control"
+                       FontSize="24"
+                       FontWeight="SemiBold"
+                       Foreground="White" />
+            <TextBlock Text="Grid verisi örnek olarak uygulama açılışında yüklenir."
+                       Foreground="#D1D5DB"
+                       Margin="0,6,0,0" />
+        </StackPanel>
+
+        <controls:CartesianHeatMapView Grid.Row="1"
+                                       GridData="{Binding HeatMapGrid}"
+                                       Cutoff="0.1" />
+    </Grid>
+</Window>

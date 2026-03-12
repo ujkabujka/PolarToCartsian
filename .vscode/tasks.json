@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-wpf-demo",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/PolarToCartsian.sln"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "run-wpf-demo",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/PolarToCartesianInterpolator.WpfDemo/PolarToCartesianInterpolator.WpfDemo.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}
