@@ -36,4 +36,16 @@ public sealed class CartesianHeatMapControlTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public void BuildRenderData_WithRadialMeshCount20_ReturnsTwentyCircles()
+    {
+        var sut = new CartesianHeatMapControl();
+        sut.SetGrid(new double[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+
+        var render = sut.BuildRenderData(radialMeshCount: 20);
+
+        Assert.Equal(20, render.PolarMesh.CircleRadiiPixels.Count);
+    }
+
 }

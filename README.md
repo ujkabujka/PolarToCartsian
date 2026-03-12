@@ -112,7 +112,7 @@ if (probe is not null)
 
 Repoya `PolarToCartsian.sln` çözümü ve `PolarToCartesianInterpolator.WpfDemo` isminde bir WPF demo projesi eklendi.
 
-- `Controls/CartesianHeatMapView`: `double[,]` grid alır ve `CartesianHeatMapControl` üzerinden renkleri hesaplayıp bitmap olarak çizer.
+- `Controls/CartesianHeatMapView`: beyaz arka plan, sağda dikey renk legend barı (1.0 -> 0.0), alt/sol eksen okları ve değer etiketleri, merkez odaklı 20 sabit radius halkası ile çizim yapar.
 - `MainWindow`: Açılışta `ExampleUsage.Create400By400SampleGrid()` ile örnek grid yükleyip kontrolü varsayılan olarak gösterir.
 
 ### VS Code ile çalıştırma
