@@ -48,4 +48,16 @@ public sealed class CartesianHeatMapControlTests
         Assert.Equal(20, render.PolarMesh.CircleRadiiPixels.Count);
     }
 
+
+    [Fact]
+    public void BuildRenderData_WithThirtyDegreeMesh_ReturnsTwelveAngleLines()
+    {
+        var sut = new CartesianHeatMapControl();
+        sut.SetGrid(new double[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+
+        var render = sut.BuildRenderData(angleMeshStepDegrees: 30);
+
+        Assert.Equal(12, render.PolarMesh.AngleLinesDegrees.Count);
+    }
+
 }

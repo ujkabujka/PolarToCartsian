@@ -1,9 +1,12 @@
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Threading;
+using Microsoft.Win32;
 using PolarToCartesianInterpolator;
 
 namespace PolarToCartesianInterpolator.WpfDemo.Controls;
@@ -23,12 +26,24 @@ public partial class CartesianHeatMapView : UserControl
         new PropertyMetadata(0.1d, OnVisualInputChanged));
 
     private HeatMapRenderData? _lastRenderData;
+    private CartesianHeatMapControl? _heatMapControl;
 
     public CartesianHeatMapView()
     {
         InitializeComponent();
-        Loaded += (_, _) => RenderHeatMap();
-        HeatMapViewport.SizeChanged += (_, _) => RedrawOverlays();
+
+        Loaded += (_, _) =>
+        {
+            CutoffTextBox.Text = Cutoff.ToString("0.###", CultureInfo.InvariantCulture);
+            RenderHeatMap();
+        };
+
+        HeatMapViewport.SizeChanged += (_, _) =>
+        {
+            RedrawOverlays();
+            RedrawAxes();
+        };
+
         XAxisCanvas.SizeChanged += (_, _) => RedrawAxes();
         YAxisCanvas.SizeChanged += (_, _) => RedrawAxes();
         LegendCanvas.SizeChanged += (_, _) => DrawLegendLabels();
@@ -46,9 +61,122 @@ public partial class CartesianHeatMapView : UserControl
         set => SetValue(CutoffProperty, value);
     }
 
+    public void SavePlot(string outputPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        if (HeatMapImage.Source is not BitmapSource bitmap)
+            throw new InvalidOperationException("Save için önce grid render edilmiş olmalı.");
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+            Directory.CreateDirectory(directory);
+
+        using var fs = File.Create(outputPath);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        encoder.Save(fs);
+    }
+
     private static void OnVisualInputChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        ((CartesianHeatMapView)d).RenderHeatMap();
+        var control = (CartesianHeatMapView)d;
+        if (e.Property == CutoffProperty && control.CutoffTextBox is not null)
+            control.CutoffTextBox.Text = control.Cutoff.ToString("0.###", CultureInfo.InvariantCulture);
+
+        control.RenderHeatMap();
+    }
+
+    private void SavePlotButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Filter = "PNG Image|*.png",
+            AddExtension = true,
+            DefaultExt = "png",
+            FileName = "heatmap.png"
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        try
+        {
+            SavePlot(dialog.FileName);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Dosya kaydedilemedi: {ex.Message}", "Save Plot", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void CutoffTextBox_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!double.TryParse(CutoffTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var newCutoff) ||
+            newCutoff < 0 ||
+            newCutoff > 1)
+        {
+            newCutoff = 0.1;
+        }
+
+        Cutoff = newCutoff;
+        CutoffTextBox.Text = newCutoff.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    private void HeatMapViewport_OnMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_heatMapControl is null || _lastRenderData is null)
+            return;
+
+        var click = e.GetPosition(HeatMapViewport);
+        var pixelWidth = _lastRenderData.Pixels.GetLength(1);
+        var pixelHeight = _lastRenderData.Pixels.GetLength(0);
+
+        if (HeatMapViewport.ActualWidth <= 0 || HeatMapViewport.ActualHeight <= 0)
+            return;
+
+        var pixelX = (click.X / HeatMapViewport.ActualWidth) * (pixelWidth - 1);
+        var pixelY = (click.Y / HeatMapViewport.ActualHeight) * (pixelHeight - 1);
+
+        var probe = _heatMapControl.ProbeAtPixel(pixelX, pixelY);
+        if (probe is null)
+            return;
+
+        ShowProbePopup(click, probe.Value);
+    }
+
+    private void ShowProbePopup(Point location, HeatMapProbeResult probe)
+    {
+        var box = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(240, 255, 255, 255)),
+            BorderBrush = Brushes.Black,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(6),
+            CornerRadius = new CornerRadius(4),
+            Child = new TextBlock
+            {
+                FontSize = 11,
+                Text =
+                    $"T: {probe.InterpolatedTemperature:F3}\n" +
+                    $"X: {probe.CartesianX:F2}\n" +
+                    $"Y: {probe.CartesianY:F2}\n" +
+                    $"R: {probe.Radius:F2}\n" +
+                    $"Theta: {probe.AngleDegrees:F1}°"
+            }
+        };
+
+        Canvas.SetLeft(box, Math.Max(4, Math.Min(location.X + 8, HeatMapViewport.ActualWidth - 140)));
+        Canvas.SetTop(box, Math.Max(4, Math.Min(location.Y + 8, HeatMapViewport.ActualHeight - 110)));
+        OverlayCanvas.Children.Add(box);
+
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            OverlayCanvas.Children.Remove(box);
+        };
+        timer.Start();
     }
 
     private void RenderHeatMap()
@@ -57,6 +185,7 @@ public partial class CartesianHeatMapView : UserControl
         {
             HeatMapImage.Source = null;
             _lastRenderData = null;
+            _heatMapControl = null;
             OverlayCanvas.Children.Clear();
             XAxisCanvas.Children.Clear();
             YAxisCanvas.Children.Clear();
@@ -64,9 +193,9 @@ public partial class CartesianHeatMapView : UserControl
             return;
         }
 
-        var heatMap = new CartesianHeatMapControl(Cutoff);
-        heatMap.SetGrid(GridData);
-        _lastRenderData = heatMap.BuildRenderData(legendStepCount: 11, radialMeshCount: 20, angleMeshStepDegrees: 30);
+        _heatMapControl = new CartesianHeatMapControl(Cutoff);
+        _heatMapControl.SetGrid(GridData);
+        _lastRenderData = _heatMapControl.BuildRenderData(legendStepCount: 11, radialMeshCount: 20, angleMeshStepDegrees: 30);
 
         var height = _lastRenderData.Pixels.GetLength(0);
         var width = _lastRenderData.Pixels.GetLength(1);
@@ -132,6 +261,29 @@ public partial class CartesianHeatMapView : UserControl
             OverlayCanvas.Children.Add(ellipse);
         }
 
+        var maxRadius = _lastRenderData.PolarMesh.CircleRadiiPixels.Count > 0
+            ? _lastRenderData.PolarMesh.CircleRadiiPixels[^1] * radiusScale
+            : Math.Min(viewportWidth, viewportHeight) / 2.0;
+
+        for (var angle = 0; angle < 360; angle += 30)
+        {
+            var radians = angle * (Math.PI / 180.0);
+            var endX = centerX + (Math.Cos(radians) * maxRadius);
+            var endY = centerY - (Math.Sin(radians) * maxRadius);
+
+            var radialLine = new Line
+            {
+                X1 = centerX,
+                Y1 = centerY,
+                X2 = endX,
+                Y2 = endY,
+                Stroke = new SolidColorBrush(Color.FromArgb(90, 31, 41, 55)),
+                StrokeThickness = 0.8
+            };
+
+            OverlayCanvas.Children.Add(radialLine);
+        }
+
         var centerMarker = new Ellipse
         {
             Width = 4,
@@ -185,29 +337,19 @@ public partial class CartesianHeatMapView : UserControl
         };
         XAxisCanvas.Children.Add(arrow);
 
-        var pixelWidth = _lastRenderData!.Pixels.GetLength(1);
-        var scaleX = width / (pixelWidth - 1.0);
+        var halfRange = GetOuterRadiusInCartesianUnits();
+        var tickCount = 9;
 
-        foreach (var tick in _lastRenderData.XAxisTicks)
+        for (var i = 0; i < tickCount; i++)
         {
-            var x = tick.PixelPosition * scaleX;
-            var mark = new Line
-            {
-                X1 = x,
-                Y1 = axisY,
-                X2 = x,
-                Y2 = axisY + 5,
-                Stroke = Brushes.Black,
-                StrokeThickness = 1
-            };
+            var t = i / (double)(tickCount - 1);
+            var x = t * (width - 12);
+            var value = (-halfRange) + (2 * halfRange * t);
+
+            var mark = new Line { X1 = x, Y1 = axisY, X2 = x, Y2 = axisY + 5, Stroke = Brushes.Black, StrokeThickness = 1 };
             XAxisCanvas.Children.Add(mark);
 
-            var label = new TextBlock
-            {
-                Text = tick.CartesianValue.ToString("0", CultureInfo.InvariantCulture),
-                FontSize = 10,
-                Foreground = Brushes.Black
-            };
+            var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
             Canvas.SetLeft(label, Math.Max(0, x - 10));
             Canvas.SetTop(label, axisY + 8);
             XAxisCanvas.Children.Add(label);
@@ -249,29 +391,19 @@ public partial class CartesianHeatMapView : UserControl
         };
         YAxisCanvas.Children.Add(arrow);
 
-        var pixelHeight = _lastRenderData!.Pixels.GetLength(0);
-        var scaleY = height / (pixelHeight - 1.0);
+        var halfRange = GetOuterRadiusInCartesianUnits();
+        var tickCount = 9;
 
-        foreach (var tick in _lastRenderData.YAxisTicks)
+        for (var i = 0; i < tickCount; i++)
         {
-            var y = tick.PixelPosition * scaleY;
-            var mark = new Line
-            {
-                X1 = axisX,
-                Y1 = y,
-                X2 = axisX - 5,
-                Y2 = y,
-                Stroke = Brushes.Black,
-                StrokeThickness = 1
-            };
+            var t = i / (double)(tickCount - 1);
+            var y = t * height;
+            var value = halfRange - (2 * halfRange * t);
+
+            var mark = new Line { X1 = axisX, Y1 = y, X2 = axisX - 5, Y2 = y, Stroke = Brushes.Black, StrokeThickness = 1 };
             YAxisCanvas.Children.Add(mark);
 
-            var label = new TextBlock
-            {
-                Text = tick.CartesianValue.ToString("0", CultureInfo.InvariantCulture),
-                FontSize = 10,
-                Foreground = Brushes.Black
-            };
+            var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
             Canvas.SetRight(label, 20);
             Canvas.SetTop(label, Math.Max(0, y - 8));
             YAxisCanvas.Children.Add(label);
@@ -281,6 +413,14 @@ public partial class CartesianHeatMapView : UserControl
         Canvas.SetLeft(axisName, axisX - 6);
         Canvas.SetTop(axisName, 0);
         YAxisCanvas.Children.Add(axisName);
+    }
+
+    private double GetOuterRadiusInCartesianUnits()
+    {
+        if (_lastRenderData is null || _lastRenderData.PolarMesh.CircleRadiiPixels.Count == 0)
+            return 0;
+
+        return _lastRenderData.PolarMesh.CircleRadiiPixels[^1];
     }
 
     private void DrawLegendLabels()

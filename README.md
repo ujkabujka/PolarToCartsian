@@ -112,7 +112,7 @@ if (probe is not null)
 
 Repoya `PolarToCartsian.sln` çözümü ve `PolarToCartesianInterpolator.WpfDemo` isminde bir WPF demo projesi eklendi.
 
-- `Controls/CartesianHeatMapView`: beyaz arka plan, sağda dikey renk legend barı (1.0 -> 0.0), alt/sol eksen okları ve değer etiketleri, merkez odaklı 20 sabit radius halkası ile çizim yapar.
+- `Controls/CartesianHeatMapView`: beyaz arka plan, solda Save Plot butonu + cutoff girişi, sağda dikey renk legend barı (1.0 -> 0.0), alt/sol eksen okları ve değer etiketleri, merkezden 30° aralıklı 12 radyal çizgi ve 20 sabit radius halkası ile çizim yapar.
 - `MainWindow`: Açılışta `ExampleUsage.Create400By400SampleGrid()` ile örnek grid yükleyip kontrolü varsayılan olarak gösterir.
 
 ### VS Code ile çalıştırma
@@ -143,3 +143,6 @@ Heat map kontrolü için temel davranış testleri eklendi (`tests/PolarToCartes
 ```powershell
 dotnet test .\tests\PolarToCartesianInterpolator.Tests\PolarToCartesianInterpolator.Tests.csproj
 ```
+
+
+`CartesianHeatMapView` ayrıca kod tarafından çağrılabilecek bir `SavePlot(string path)` metodu sağlar (PNG kaydı). UI tarafındaki "Save Plot" butonu dosya diyalogu ile bu metodu kullanır.
