@@ -68,7 +68,7 @@ public partial class CartesianHeatMapView : UserControl
         if (HeatMapImage.Source is not BitmapSource bitmap)
             throw new InvalidOperationException("Save için önce grid render edilmiş olmalı.");
 
-        var directory = Path.GetDirectoryName(outputPath);
+        var directory = System.IO.Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrWhiteSpace(directory))
             Directory.CreateDirectory(directory);
 
