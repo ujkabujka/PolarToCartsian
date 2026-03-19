@@ -107,3 +107,44 @@ if (probe is not null)
 }
 ```
 - Radius aralığı dışındaki noktalar interpolasyonda `double.NaN` döner; senaryo testinde convolution öncesi bu değerler `0` ile normalize edilir.
+
+## WPF Heat Map Demo
+
+Repoya `PolarToCartsian.sln` çözümü ve `PolarToCartesianInterpolator.WpfDemo` isminde bir WPF demo projesi eklendi.
+
+- `Controls/CartesianHeatMapView`: beyaz arka plan, solda Save Plot butonu + cutoff girişi, sağda dikey renk legend barı (1.0 -> 0.0), alt/sol eksen okları ve değer etiketleri, merkezden 30° aralıklı 12 radyal çizgi ve 20 sabit radius halkası ile çizim yapar.
+- `MainWindow`: Açılışta `ExampleUsage.Create400By400SampleGrid()` ile örnek grid yükleyip kontrolü varsayılan olarak gösterir.
+
+### VS Code ile çalıştırma
+
+> Not: WPF yalnızca Windows'ta çalışır.
+
+1. Çözümü build edin:
+
+```powershell
+dotnet build .\PolarToCartsian.sln
+```
+
+2. Demo uygulamayı başlatın:
+
+```powershell
+dotnet run --project .\PolarToCartesianInterpolator.WpfDemo\PolarToCartesianInterpolator.WpfDemo.csproj
+```
+
+Ayrıca VS Code için hazır:
+
+- `.vscode/tasks.json` (`build-wpf-demo`, `run-wpf-demo`)
+- `.vscode/launch.json` (`.NET Launch WPF Demo`)
+
+### Testler
+
+Heat map kontrolü için temel davranış testleri eklendi (`tests/PolarToCartesianInterpolator.Tests`).
+
+```powershell
+dotnet test .\tests\PolarToCartesianInterpolator.Tests\PolarToCartesianInterpolator.Tests.csproj
+```
+
+
+`CartesianHeatMapView` ayrıca kod tarafından çağrılabilecek bir `SavePlot(string path)` metodu sağlar (PNG kaydı). UI tarafındaki "Save Plot" butonu dosya diyalogu ile bu metodu kullanır. Kaydedilen görsel plot+axis+legend alanını birlikte içerir.
+
+Cutoff textbox'ı Enter ile odaktan çıkar; değer geçersizse otomatik `0.1` uygulanır ve çizim yenilenir.
