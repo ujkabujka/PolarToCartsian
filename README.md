@@ -145,4 +145,6 @@ dotnet test .\tests\PolarToCartesianInterpolator.Tests\PolarToCartesianInterpola
 ```
 
 
-`CartesianHeatMapView` ayrıca kod tarafından çağrılabilecek bir `SavePlot(string path)` metodu sağlar (PNG kaydı). UI tarafındaki "Save Plot" butonu dosya diyalogu ile bu metodu kullanır.
+`CartesianHeatMapView` ayrıca kod tarafından çağrılabilecek bir `SavePlot(string path)` metodu sağlar (PNG kaydı). UI tarafındaki "Save Plot" butonu dosya diyalogu ile bu metodu kullanır. Kaydedilen görsel plot+axis+legend alanını birlikte içerir.
+
+Cutoff textbox'ı Enter ile odaktan çıkar; değer geçersizse otomatik `0.1` uygulanır ve çizim yenilenir.

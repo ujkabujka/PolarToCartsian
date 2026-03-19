@@ -3,12 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              MinHeight="420"
              MinWidth="760">
-    <Grid Background="White" Margin="8">
+    <Grid x:Name="RootGrid" Background="White" Margin="8">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="170" />
             <ColumnDefinition Width="72" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="130" />
+            <ColumnDefinition Width="160" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -37,7 +37,8 @@
                 <TextBox x:Name="CutoffTextBox"
                          Margin="0,6,0,0"
                          Text="0.1"
-                         LostFocus="CutoffTextBox_OnLostFocus" />
+                         LostFocus="CutoffTextBox_OnLostFocus"
+                         KeyDown="CutoffTextBox_OnKeyDown" />
                 <TextBlock Text="Invalid girişte otomatik 0.1 kullanılır."
                            FontSize="11"
                            Foreground="#6B7280"
@@ -51,82 +52,96 @@
                 Grid.Row="0"
                 Background="White" />
 
-        <Border Grid.Column="2"
-                Grid.Row="0"
-                BorderThickness="1"
-                BorderBrush="#D1D5DB"
-                Background="White">
-            <Grid x:Name="HeatMapViewport"
-                  MouseLeftButtonDown="HeatMapViewport_OnMouseLeftButtonDown">
-                <Image x:Name="HeatMapImage"
-                       Stretch="Fill"
-                       SnapsToDevicePixels="True"
-                       UseLayoutRounding="True" />
-                <Canvas x:Name="OverlayCanvas"
-                        ClipToBounds="True"
-                        Background="Transparent" />
-            </Grid>
-        </Border>
+        <Grid Grid.Column="2"
+              Grid.Row="0"
+              Grid.RowSpan="2"
+              Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="160" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="56" />
+            </Grid.RowDefinitions>
 
-        <Canvas x:Name="XAxisCanvas"
-                Grid.Column="2"
-                Grid.Row="1"
-                Background="White" />
-
-        <Border Grid.Column="3"
-                Grid.Row="0"
-                Grid.RowSpan="2"
-                Margin="12,0,0,0"
-                BorderBrush="#D1D5DB"
-                BorderThickness="1"
-                Background="White"
-                Padding="10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <TextBlock Text="Temperature"
-                           FontWeight="SemiBold"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,8" />
-
-                <Grid Grid.Row="1" Margin="0,4,0,4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="26" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0"
-                            CornerRadius="2"
-                            BorderBrush="#9CA3AF"
-                            BorderThickness="1">
-                        <Rectangle>
-                            <Rectangle.Fill>
-                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                                    <GradientStop Color="#FFFF0000" Offset="0.0" />
-                                    <GradientStop Color="#FFFFA500" Offset="0.25" />
-                                    <GradientStop Color="#FFFFFF00" Offset="0.50" />
-                                    <GradientStop Color="#FF008000" Offset="0.75" />
-                                    <GradientStop Color="#FF0000FF" Offset="1.0" />
-                                </LinearGradientBrush>
-                            </Rectangle.Fill>
-                        </Rectangle>
-                    </Border>
-                    <Canvas x:Name="LegendCanvas"
-                            Grid.Column="1"
-                            Margin="8,0,0,0"
-                            Background="White" />
+            <Border Grid.Column="0"
+                    Grid.Row="0"
+                    BorderThickness="1"
+                    BorderBrush="#D1D5DB"
+                    Background="White">
+                <Grid x:Name="HeatMapViewport"
+                      MouseLeftButtonDown="HeatMapViewport_OnMouseLeftButtonDown">
+                    <Image x:Name="HeatMapImage"
+                           Stretch="Uniform"
+                           SnapsToDevicePixels="True"
+                           UseLayoutRounding="True" />
+                    <Canvas x:Name="OverlayCanvas"
+                            ClipToBounds="True"
+                            Background="Transparent" />
                 </Grid>
+            </Border>
 
-                <TextBlock Grid.Row="2"
-                           Text="Red = 1.0, Blue = 0.0"
-                           FontSize="11"
-                           Foreground="#374151"
-                           HorizontalAlignment="Center"
-                           Margin="0,8,0,0" />
-            </Grid>
-        </Border>
+            <Canvas x:Name="XAxisCanvas"
+                    Grid.Column="0"
+                    Grid.Row="1"
+                    Background="White" />
+
+            <Border Grid.Column="1"
+                    Grid.Row="0"
+                    Grid.RowSpan="2"
+                    Margin="12,0,0,0"
+                    BorderBrush="#D1D5DB"
+                    BorderThickness="1"
+                    Background="White"
+                    Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Temperature"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8" />
+
+                    <Grid Grid.Row="1" Margin="0,4,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="26" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0"
+                                CornerRadius="2"
+                                BorderBrush="#9CA3AF"
+                                BorderThickness="1">
+                            <Rectangle>
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                        <GradientStop Color="#FFFF0000" Offset="0.0" />
+                                        <GradientStop Color="#FFFFA500" Offset="0.25" />
+                                        <GradientStop Color="#FFFFFF00" Offset="0.50" />
+                                        <GradientStop Color="#FF008000" Offset="0.75" />
+                                        <GradientStop Color="#FF0000FF" Offset="1.0" />
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                        </Border>
+                        <Canvas x:Name="LegendCanvas"
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                Background="White" />
+                    </Grid>
+
+                    <TextBlock Grid.Row="2"
+                               Text="Red = 1.0, Blue = 0.0"
+                               FontSize="11"
+                               Foreground="#374151"
+                               HorizontalAlignment="Center"
+                               Margin="0,8,0,0" />
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
