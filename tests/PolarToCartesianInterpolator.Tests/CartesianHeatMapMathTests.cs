@@ -64,4 +64,70 @@ public sealed class CartesianHeatMapMathTests
 
         Assert.Throws<ArgumentException>(() => CartesianHeatMapMath.SubtractFromOne(input));
     }
+
+    [Fact]
+    public void CalculateTemperatureTimesArea_UsesAverageOfFourCornersPerCell()
+    {
+        var input = new double[,]
+        {
+            { 0.2, 0.4 },
+            { 0.6, 0.8 }
+        };
+
+        var result = CartesianHeatMapMath.CalculateTemperatureTimesArea(input, cellSize: 2.0);
+
+        Assert.Equal(2.0, result, 6);
+    }
+
+    [Fact]
+    public void CalculateTemperatureTimesArea_WithTooSmallGrid_Throws()
+    {
+        var input = new double[,] { { 0.2 } };
+
+        Assert.Throws<ArgumentException>(() => CartesianHeatMapMath.CalculateTemperatureTimesArea(input));
+    }
+
+    [Fact]
+    public void ApplyBinaryThreshold_MapsValuesToZeroAndOne()
+    {
+        var input = new double[,]
+        {
+            { 0.49, 0.50 },
+            { 0.90, 0.10 }
+        };
+
+        var result = CartesianHeatMapMath.ApplyBinaryThreshold(input, threshold: 0.5);
+
+        Assert.Equal(0.0, result[0, 0], 6);
+        Assert.Equal(1.0, result[0, 1], 6);
+        Assert.Equal(1.0, result[1, 0], 6);
+        Assert.Equal(0.0, result[1, 1], 6);
+    }
+
+    [Fact]
+    public void CalculateThresholdedTemperatureTimesArea_UsesThresholdedBinaryGrid()
+    {
+        var input = new double[,]
+        {
+            { 0.49, 0.50 },
+            { 0.90, 0.10 }
+        };
+
+        var result = CartesianHeatMapMath.CalculateThresholdedTemperatureTimesArea(input, threshold: 0.5, cellSize: 2.0);
+
+        Assert.Equal(2.0, result, 6);
+    }
+
+    [Fact]
+    public void CalculateThresholdedTemperatureTimesArea_WithInvalidThreshold_Throws()
+    {
+        var input = new double[,]
+        {
+            { 0.2, 0.4 },
+            { 0.6, 0.8 }
+        };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            CartesianHeatMapMath.CalculateThresholdedTemperatureTimesArea(input, threshold: 1.1));
+    }
 }
