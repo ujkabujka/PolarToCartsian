@@ -72,7 +72,8 @@ public partial class CartesianHeatMapView : UserControl
         if (HeatMapImage.Source is null)
             throw new InvalidOperationException("Save için önce grid render edilmiş olmalı.");
 
-        var start = HeatMapViewport.TranslatePoint(new Point(0, 0), RootGrid);
+        FrameworkElement exportAnchor = YAxisCanvas.ActualWidth > 0 ? YAxisCanvas : HeatMapViewport;
+        var start = exportAnchor.TranslatePoint(new Point(0, 0), RootGrid);
         var exportWidth = RootGrid.ActualWidth - start.X;
         var exportHeight = RootGrid.ActualHeight - start.Y;
 
