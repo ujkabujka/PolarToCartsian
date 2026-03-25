@@ -2,6 +2,36 @@ namespace PolarToCartesianInterpolator;
 
 public static class CartesianConvolutionFilter
 {
+    public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, double sigmaY, double meanX, double meanY)
+    {
+        if (length <= 0 || length % 2 == 0)
+            throw new ArgumentOutOfRangeException(nameof(length), "Kernel boyutu sifirdan buyuk tek sayi olmali.");
+        if (!double.IsFinite(sigmaX) || sigmaX <= 0)
+            throw new ArgumentOutOfRangeException(nameof(sigmaX), "SigmaX sifirdan buyuk olmali.");
+        if (!double.IsFinite(sigmaY) || sigmaY <= 0)
+            throw new ArgumentOutOfRangeException(nameof(sigmaY), "SigmaY sifirdan buyuk olmali.");
+        if (!double.IsFinite(meanX))
+            throw new ArgumentOutOfRangeException(nameof(meanX), "MeanX sonlu bir sayi olmali.");
+        if (!double.IsFinite(meanY))
+            throw new ArgumentOutOfRangeException(nameof(meanY), "MeanY sonlu bir sayi olmali.");
+
+        var kernel = new double[length, length];
+        var radius = length / 2;
+        var sum = 0d;
+
+        for (var y = 0; y < length; y++)
+        {
+            for (var x = 0; x < length; x++)
+            {
+                var shiftedX = x - radius - meanX;
+                var shiftedY = y - radius - meanY;
+
+                var exponent = -0.5 * (
+                    (shiftedX * shiftedX) / (sigmaX * sigmaX) +
+                    (shiftedY * shiftedY) / (sigmaY * sigmaY));
+
+                var value = Math.Exp(exponent);
+                kernel[y, x] = value;
     /// <summary>
     /// Belirtilen boyut ve dağılım parametreleriyle iki değişkenli normal dağılım tabanlı bir konvolüsyon çekirdeği oluşturur.
     /// Dönen çekirdek, tüm elemanlarının toplamı 1.0 olacak şekilde normalize edilir.
@@ -40,6 +70,14 @@ public static class CartesianConvolutionFilter
             }
         }
 
+        if (sum == 0d)
+            throw new InvalidOperationException("Gaussian kernel normalize edilemedi (toplam sifir).");
+
+        for (var y = 0; y < length; y++)
+        {
+            for (var x = 0; x < length; x++)
+            {
+                kernel[y, x] /= sum;
         for (var row = 0; row < length; row++)
         {
             for (var col = 0; col < length; col++)
@@ -49,6 +87,19 @@ public static class CartesianConvolutionFilter
         }
 
         return kernel;
+    }
+
+    /// <summary>
+    /// Simplified symmetric Gaussian kernel üretir: meanX = meanY = 0 ve sigmaX = sigmaY = r.
+    /// </summary>
+    public static double[,] CreateNormalKernel(int length, double r)
+    {
+        if (length <= 0 || length % 2 == 0)
+            throw new ArgumentOutOfRangeException(nameof(length), "Kernel boyutu sifirdan buyuk tek sayi olmali.");
+        if (!double.IsFinite(r) || r <= 0)
+            throw new ArgumentOutOfRangeException(nameof(r), "r (sigma) sifirdan buyuk olmali.");
+
+        return CreateBivariateNormalKernel(length, r, r, 0d, 0d);
     }
 
     public static double[,] Apply(double[,] input, double[,] kernel)
