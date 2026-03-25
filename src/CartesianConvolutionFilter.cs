@@ -32,6 +32,40 @@ public static class CartesianConvolutionFilter
 
                 var value = Math.Exp(exponent);
                 kernel[y, x] = value;
+    /// <summary>
+    /// Belirtilen boyut ve dağılım parametreleriyle iki değişkenli normal dağılım tabanlı bir konvolüsyon çekirdeği oluşturur.
+    /// Dönen çekirdek, tüm elemanlarının toplamı 1.0 olacak şekilde normalize edilir.
+    /// </summary>
+    /// <param name="length">Kare çekirdeğin kenar uzunluğu. Pozitif ve tek sayı olmalıdır.</param>
+    /// <param name="sigmaX">X ekseni standart sapması. Sıfırdan büyük olmalıdır.</param>
+    /// <param name="sigmaY">Y ekseni standart sapması. Sıfırdan büyük olmalıdır.</param>
+    /// <param name="meanX">X ekseni ortalaması (çekirdek merkezine göre).</param>
+    /// <param name="meanY">Y ekseni ortalaması (çekirdek merkezine göre).</param>
+    /// <returns>Toplamı 1.0 olacak şekilde normalize edilmiş iki boyutlu normal dağılım çekirdeği.</returns>
+    public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, double sigmaY, double meanX, double meanY)
+    {
+        if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length), "Kernel boyutu pozitif olmalıdır.");
+        if (length % 2 == 0) throw new ArgumentException("Kernel boyutu tek sayı olmalıdır (3x3, 5x5 gibi).", nameof(length));
+        if (sigmaX <= 0) throw new ArgumentOutOfRangeException(nameof(sigmaX), "sigmaX sıfırdan büyük olmalıdır.");
+        if (sigmaY <= 0) throw new ArgumentOutOfRangeException(nameof(sigmaY), "sigmaY sıfırdan büyük olmalıdır.");
+
+        var kernel = new double[length, length];
+        var center = length / 2;
+        var coefficient = 1d / (2d * Math.PI * sigmaX * sigmaY);
+        var sigmaXSquared = sigmaX * sigmaX;
+        var sigmaYSquared = sigmaY * sigmaY;
+        var sum = 0d;
+
+        for (var row = 0; row < length; row++)
+        {
+            var y = row - center;
+
+            for (var col = 0; col < length; col++)
+            {
+                var x = col - center;
+                var exponent = -0.5d * (((x - meanX) * (x - meanX) / sigmaXSquared) + ((y - meanY) * (y - meanY) / sigmaYSquared));
+                var value = coefficient * Math.Exp(exponent);
+                kernel[row, col] = value;
                 sum += value;
             }
         }
@@ -44,6 +78,11 @@ public static class CartesianConvolutionFilter
             for (var x = 0; x < length; x++)
             {
                 kernel[y, x] /= sum;
+        for (var row = 0; row < length; row++)
+        {
+            for (var col = 0; col < length; col++)
+            {
+                kernel[row, col] /= sum;
             }
         }
 
