@@ -27,8 +27,8 @@
                        Margin="0,6,0,0" />
         </StackPanel>
 
-        <controls:CartesianHeatMapView Grid.Row="1"
-                                       GridData="{Binding HeatMapGrid}"
-                                       Cutoff="0.1" />
+        <controls:ProbabilityDistributerHeatMapView Grid.Row="1"
+                                                     GridData="{Binding HeatMapGrid}"
+                                                     Cutoff="0.1" />
     </Grid>
 </Window>
