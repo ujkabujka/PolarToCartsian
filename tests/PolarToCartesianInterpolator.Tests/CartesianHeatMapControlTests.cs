@@ -10,15 +10,15 @@ public sealed class CartesianHeatMapControlTests
     {
         var sut = new CartesianHeatMapControl();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => sut.Cutoff = -0.01);
-        Assert.Throws<ArgumentOutOfRangeException>(() => sut.Cutoff = 1.01);
+        Assert.Throws<ArgumentOutOfRangeException>(() => sut.Cutoff = -0.01f);
+        Assert.Throws<ArgumentOutOfRangeException>(() => sut.Cutoff = 1.01f);
     }
 
     [Fact]
     public void BuildRenderData_BelowCutoffValue_IsWhite()
     {
-        var sut = new CartesianHeatMapControl(cutoff: 0.30);
-        sut.SetGrid(new float[,] { { 0.10, 0.35 } });
+        var sut = new CartesianHeatMapControl(cutoff: 0.30f);
+        sut.SetGrid(new float[,] { { 0.10f, 0.35f } });
 
         var render = sut.BuildRenderData();
 
@@ -30,7 +30,7 @@ public sealed class CartesianHeatMapControlTests
     public void ProbeAtPixel_OutsideGrid_ReturnsNull()
     {
         var sut = new CartesianHeatMapControl();
-        sut.SetGrid(new float[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+        sut.SetGrid(new float[,] { { 0.1f, 0.2f }, { 0.3f, 0.4f } });
 
         var result = sut.ProbeAtPixel(-1, 0);
 
@@ -41,7 +41,7 @@ public sealed class CartesianHeatMapControlTests
     public void BuildRenderData_WithRadialMeshCount20_ReturnsTwentyCircles()
     {
         var sut = new CartesianHeatMapControl();
-        sut.SetGrid(new float[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+        sut.SetGrid(new float[,] { { 0.1f, 0.2f }, { 0.3f, 0.4f } });
 
         var render = sut.BuildRenderData(radialMeshCount: 20);
 
@@ -53,7 +53,7 @@ public sealed class CartesianHeatMapControlTests
     public void BuildRenderData_WithThirtyDegreeMesh_ReturnsTwelveAngleLines()
     {
         var sut = new CartesianHeatMapControl();
-        sut.SetGrid(new float[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+        sut.SetGrid(new float[,] { { 0.1f, 0.2f }, { 0.3f, 0.4f } });
 
         var render = sut.BuildRenderData(angleMeshStepDegrees: 30);
 
