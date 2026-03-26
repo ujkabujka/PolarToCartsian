@@ -74,11 +74,7 @@
                       ClipToBounds="True"
                       MouseLeftButtonDown="HeatMapViewport_OnMouseLeftButtonDown">
                     <Grid x:Name="PanZoomContent"
-<<<<<<< codex/optimize-grid-data-and-convolution-operations
                           RenderTransformOrigin="0,0">
-=======
-                          RenderTransformOrigin="0.5,0.5">
->>>>>>> main
                         <Image x:Name="HeatMapImage"
                                Stretch="Uniform"
                                SnapsToDevicePixels="True"
