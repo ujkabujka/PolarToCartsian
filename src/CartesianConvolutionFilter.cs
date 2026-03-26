@@ -2,7 +2,7 @@ namespace PolarToCartesianInterpolator;
 
 public static class CartesianConvolutionFilter
 {
-public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, double sigmaY, double meanX, double meanY)
+    public static float[,] CreateBivariateNormalKernel(int length, double sigmaX, double sigmaY, double meanX, double meanY)
     {
         if (length <= 0 || length % 2 == 0)
             throw new ArgumentOutOfRangeException(nameof(length), "Kernel boyutu sifirdan buyuk tek sayi olmali.");
@@ -15,7 +15,7 @@ public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, d
         if (!double.IsFinite(meanY))
             throw new ArgumentOutOfRangeException(nameof(meanY), "MeanY sonlu bir sayi olmali.");
 
-        var kernel = new double[length, length];
+        var kernel = new float[length, length];
         var radius = length / 2;
         var sum = 0d;
 
@@ -31,7 +31,7 @@ public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, d
                     (shiftedY * shiftedY) / (sigmaY * sigmaY));
 
                 var value = Math.Exp(exponent);
-                kernel[y, x] = value;
+                kernel[y, x] = (float)value;
                 sum += value;
             }
         }
@@ -43,7 +43,7 @@ public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, d
         {
             for (var x = 0; x < length; x++)
             {
-                kernel[y, x] /= sum;
+                kernel[y, x] = (float)(kernel[y, x] / sum);
             }
         }
 
@@ -53,7 +53,7 @@ public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, d
     /// <summary>
     /// Simplified symmetric Gaussian kernel üretir: meanX = meanY = 0 ve sigmaX = sigmaY = r.
     /// </summary>
-    public static double[,] CreateNormalKernel(int length, double r)
+    public static float[,] CreateNormalKernel(int length, double r)
     {
         if (length <= 0 || length % 2 == 0)
             throw new ArgumentOutOfRangeException(nameof(length), "Kernel boyutu sifirdan buyuk tek sayi olmali.");
@@ -63,42 +63,51 @@ public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, d
         return CreateBivariateNormalKernel(length, r, r, 0d, 0d);
     }
 
-
-    public static double[,] Apply(double[,] input, double[,] kernel)
+    public static float[] CreateSeparableNormalKernel1D(int length, double r)
     {
-        if (input is null) throw new ArgumentNullException(nameof(input));
-        if (kernel is null) throw new ArgumentNullException(nameof(kernel));
+        if (length <= 0 || length % 2 == 0)
+            throw new ArgumentOutOfRangeException(nameof(length), "Kernel boyutu sifirdan buyuk tek sayi olmali.");
+        if (!double.IsFinite(r) || r <= 0)
+            throw new ArgumentOutOfRangeException(nameof(r), "r (sigma) sifirdan buyuk olmali.");
 
-        var height = input.GetLength(0);
-        var width = input.GetLength(1);
-        var kernelHeight = kernel.GetLength(0);
-        var kernelWidth = kernel.GetLength(1);
+        var kernel = new float[length];
+        var radius = length / 2;
+        var sum = 0d;
 
-        if (height == 0 || width == 0) throw new ArgumentException("Input grid boş olamaz.", nameof(input));
-        if (kernelHeight == 0 || kernelWidth == 0) throw new ArgumentException("Kernel boş olamaz.", nameof(kernel));
-        if (kernelHeight != kernelWidth) throw new ArgumentException("Kernel kare (square) olmalıdır.", nameof(kernel));
-        if (kernelHeight % 2 == 0) throw new ArgumentException("Kernel boyutu tek sayı olmalıdır (3x3, 5x5 gibi).", nameof(kernel));
+        for (var i = 0; i < length; i++)
+        {
+            var x = i - radius;
+            var value = Math.Exp(-0.5 * ((x * x) / (r * r)));
+            kernel[i] = (float)value;
+            sum += value;
+        }
 
-        var output = new double[height, width];
+        for (var i = 0; i < length; i++)
+        {
+            kernel[i] = (float)(kernel[i] / sum);
+        }
+
+        return kernel;
+    }
+
+    public static float[,] ApplySingleThread(float[,] input, float[,] kernel)
+    {
+        ValidateInputAndKernel(input, kernel, out var height, out var width, out var kernelHeight, out _);
         var radius = kernelHeight / 2;
+        var padded = CreateReplicatePadded(input, radius, radius);
+        var output = new float[height, width];
 
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
             {
-                var sum = 0d;
-
-                for (var ky = -radius; ky <= radius; ky++)
+                var sum = 0f;
+                for (var ky = 0; ky < kernelHeight; ky++)
                 {
-                    var sourceY = Clamp(y + ky, 0, height - 1);
-                    var kernelY = ky + radius;
-
-                    for (var kx = -radius; kx <= radius; kx++)
+                    var sourceY = y + ky;
+                    for (var kx = 0; kx < kernelHeight; kx++)
                     {
-                        var sourceX = Clamp(x + kx, 0, width - 1);
-                        var kernelX = kx + radius;
-
-                        sum += input[sourceY, sourceX] * kernel[kernelY, kernelX];
+                        sum += padded[sourceY, x + kx] * kernel[ky, kx];
                     }
                 }
 
@@ -107,6 +116,175 @@ public static double[,] CreateBivariateNormalKernel(int length, double sigmaX, d
         }
 
         return output;
+    }
+
+    public static float[,] ApplyParallel(float[,] input, float[,] kernel)
+    {
+        ValidateInputAndKernel(input, kernel, out var height, out var width, out var kernelHeight, out _);
+        var radius = kernelHeight / 2;
+        var padded = CreateReplicatePadded(input, radius, radius);
+        var output = new float[height, width];
+
+        Parallel.For(0, height, y =>
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var sum = 0f;
+                for (var ky = 0; ky < kernelHeight; ky++)
+                {
+                    var sourceY = y + ky;
+                    for (var kx = 0; kx < kernelHeight; kx++)
+                    {
+                        sum += padded[sourceY, x + kx] * kernel[ky, kx];
+                    }
+                }
+
+                output[y, x] = sum;
+            }
+        });
+
+        return output;
+    }
+
+    public static float[,] ApplySeparableSingleThread(float[,] input, float[] kernel1D)
+    {
+        ValidateInputAndKernel1D(input, kernel1D, out var height, out var width, out var kernelLength);
+        var radius = kernelLength / 2;
+
+        var paddedRows = CreateReplicatePadded(input, 0, radius);
+        var temp = new float[height, width];
+
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var sum = 0f;
+                for (var k = 0; k < kernelLength; k++)
+                {
+                    sum += paddedRows[y, x + k] * kernel1D[k];
+                }
+
+                temp[y, x] = sum;
+            }
+        }
+
+        var paddedCols = CreateReplicatePadded(temp, radius, 0);
+        var output = new float[height, width];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var sum = 0f;
+                for (var k = 0; k < kernelLength; k++)
+                {
+                    sum += paddedCols[y + k, x] * kernel1D[k];
+                }
+
+                output[y, x] = sum;
+            }
+        }
+
+        return output;
+    }
+
+    public static float[,] ApplySeparableParallel(float[,] input, float[] kernel1D)
+    {
+        ValidateInputAndKernel1D(input, kernel1D, out var height, out var width, out var kernelLength);
+        var radius = kernelLength / 2;
+
+        var paddedRows = CreateReplicatePadded(input, 0, radius);
+        var temp = new float[height, width];
+        Parallel.For(0, height, y =>
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var sum = 0f;
+                for (var k = 0; k < kernelLength; k++)
+                {
+                    sum += paddedRows[y, x + k] * kernel1D[k];
+                }
+
+                temp[y, x] = sum;
+            }
+        });
+
+        var paddedCols = CreateReplicatePadded(temp, radius, 0);
+        var output = new float[height, width];
+        Parallel.For(0, height, y =>
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var sum = 0f;
+                for (var k = 0; k < kernelLength; k++)
+                {
+                    sum += paddedCols[y + k, x] * kernel1D[k];
+                }
+
+                output[y, x] = sum;
+            }
+        });
+
+        return output;
+    }
+
+    public static float[,] Apply(float[,] input, float[,] kernel)
+    {
+        return ApplySingleThread(input, kernel);
+    }
+
+    private static void ValidateInputAndKernel(
+        float[,] input,
+        float[,] kernel,
+        out int height,
+        out int width,
+        out int kernelHeight,
+        out int kernelWidth)
+    {
+        if (input is null) throw new ArgumentNullException(nameof(input));
+        if (kernel is null) throw new ArgumentNullException(nameof(kernel));
+
+        height = input.GetLength(0);
+        width = input.GetLength(1);
+        kernelHeight = kernel.GetLength(0);
+        kernelWidth = kernel.GetLength(1);
+
+        if (height == 0 || width == 0) throw new ArgumentException("Input grid boş olamaz.", nameof(input));
+        if (kernelHeight == 0 || kernelWidth == 0) throw new ArgumentException("Kernel boş olamaz.", nameof(kernel));
+        if (kernelHeight != kernelWidth) throw new ArgumentException("Kernel kare (square) olmalıdır.", nameof(kernel));
+        if (kernelHeight % 2 == 0) throw new ArgumentException("Kernel boyutu tek sayı olmalıdır (3x3, 5x5 gibi).", nameof(kernel));
+
+    }
+
+    private static void ValidateInputAndKernel1D(float[,] input, float[] kernel1D, out int height, out int width, out int kernelLength)
+    {
+        if (input is null) throw new ArgumentNullException(nameof(input));
+        if (kernel1D is null) throw new ArgumentNullException(nameof(kernel1D));
+
+        height = input.GetLength(0);
+        width = input.GetLength(1);
+        kernelLength = kernel1D.Length;
+        if (height == 0 || width == 0) throw new ArgumentException("Input grid boş olamaz.", nameof(input));
+        if (kernelLength == 0) throw new ArgumentException("Kernel boş olamaz.", nameof(kernel1D));
+        if (kernelLength % 2 == 0) throw new ArgumentException("Kernel boyutu tek sayı olmalıdır (3, 5 gibi).", nameof(kernel1D));
+    }
+
+    private static float[,] CreateReplicatePadded(float[,] input, int padY, int padX)
+    {
+        var height = input.GetLength(0);
+        var width = input.GetLength(1);
+        var padded = new float[height + (2 * padY), width + (2 * padX)];
+
+        for (var y = 0; y < padded.GetLength(0); y++)
+        {
+            var sourceY = Clamp(y - padY, 0, height - 1);
+            for (var x = 0; x < padded.GetLength(1); x++)
+            {
+                var sourceX = Clamp(x - padX, 0, width - 1);
+                padded[y, x] = input[sourceY, sourceX];
+            }
+        }
+
+        return padded;
     }
 
     private static int Clamp(int value, int min, int max)

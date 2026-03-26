@@ -34,11 +34,11 @@ public sealed class PolarGridInterpolator
         return InterpolateTemperaturePolar(radius, theta);
     }
 
-    public double[,] BuildCartesianTemperatureGrid(int sizeMeters)
+    public float[,] BuildCartesianTemperatureGrid(int sizeMeters)
     {
         if (sizeMeters <= 0) throw new ArgumentOutOfRangeException(nameof(sizeMeters));
 
-        var grid = new double[sizeMeters, sizeMeters];
+        var grid = new float[sizeMeters, sizeMeters];
         var half = sizeMeters / 2.0;
 
         for (var row = 0; row < sizeMeters; row++)
@@ -47,7 +47,7 @@ public sealed class PolarGridInterpolator
             for (var col = 0; col < sizeMeters; col++)
             {
                 var x = col - half;
-                grid[row, col] = InterpolateTemperatureAtCartesian(x, y);
+                grid[row, col] = (float)InterpolateTemperatureAtCartesian(x, y);
             }
         }
 
