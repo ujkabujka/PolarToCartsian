@@ -2,6 +2,22 @@ namespace PolarToCartesianInterpolator;
 
 public static class CartesianHeatMapMath
 {
+    public static double Sum(double[,] heatMap)
+    {
+        var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
+        double result = 0;
+
+        for (var row = 0; row < height; row++)
+        {
+            for (var col = 0; col < width; col++)
+            {
+                result += heatMap[row, col];
+            }
+        }
+
+        return result;
+    }
+
     public static double[,] SubtractFromOne(double[,] heatMap)
     {
         var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));

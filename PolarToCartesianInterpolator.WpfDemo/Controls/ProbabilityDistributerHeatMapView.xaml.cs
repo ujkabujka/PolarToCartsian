@@ -30,6 +30,8 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
     public ProbabilityDistributerHeatMapView()
     {
         InitializeComponent();
+        // GridData = ExampleUsage.Create400By400SampleGrid();
+
         Loaded += (_, _) => RefreshGrid();
     }
 
@@ -64,6 +66,7 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
 
         if (!double.TryParse(R50TextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var r50) || r50 < 0)
             r50 = 0;
+        _probabilityDistributer.SetGrid(ExampleUsage.Create400By400SampleGrid());
 
         _probabilityDistributer.R50 = r50;
         R50TextBox.Text = r50.ToString("0.###", CultureInfo.InvariantCulture);
@@ -93,6 +96,7 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
             TargetProbability = 0.95d
         };
 
+        _probabilityDistributer.SetGrid(ExampleUsage.Create400By400SampleGrid());
         R50TextBox.Text = "0";
         TargetProbabilityComboBox.SelectedIndex = 0;
 

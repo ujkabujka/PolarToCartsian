@@ -56,9 +56,12 @@ public sealed class PolarGridInterpolator
 
     public double InterpolateTemperaturePolar(double radius, double thetaDegrees)
     {
-        if (radius < _firstRadius || radius > _rings[^1].Radius)
-            return double.NaN;
-
+        if (radius < _firstRadius)  
+            radius = _firstRadius;
+        else if (radius > _rings[^1].Radius)
+        {
+            return 0;
+        }
         var lowerIndex = (int)Math.Floor((radius - _firstRadius) / _radiusStep);
         if (lowerIndex >= _rings.Length - 1)
             lowerIndex = _rings.Length - 2;
