@@ -18,7 +18,7 @@ public sealed class CartesianHeatMapControlTests
     public void BuildRenderData_BelowCutoffValue_IsWhite()
     {
         var sut = new CartesianHeatMapControl(cutoff: 0.30);
-        sut.SetGrid(new double[,] { { 0.10, 0.35 } });
+        sut.SetGrid(new float[,] { { 0.10, 0.35 } });
 
         var render = sut.BuildRenderData();
 
@@ -30,7 +30,7 @@ public sealed class CartesianHeatMapControlTests
     public void ProbeAtPixel_OutsideGrid_ReturnsNull()
     {
         var sut = new CartesianHeatMapControl();
-        sut.SetGrid(new double[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+        sut.SetGrid(new float[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
 
         var result = sut.ProbeAtPixel(-1, 0);
 
@@ -41,7 +41,7 @@ public sealed class CartesianHeatMapControlTests
     public void BuildRenderData_WithRadialMeshCount20_ReturnsTwentyCircles()
     {
         var sut = new CartesianHeatMapControl();
-        sut.SetGrid(new double[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+        sut.SetGrid(new float[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
 
         var render = sut.BuildRenderData(radialMeshCount: 20);
 
@@ -53,11 +53,42 @@ public sealed class CartesianHeatMapControlTests
     public void BuildRenderData_WithThirtyDegreeMesh_ReturnsTwelveAngleLines()
     {
         var sut = new CartesianHeatMapControl();
-        sut.SetGrid(new double[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
+        sut.SetGrid(new float[,] { { 0.1, 0.2 }, { 0.3, 0.4 } });
 
         var render = sut.BuildRenderData(angleMeshStepDegrees: 30);
 
         Assert.Equal(12, render.PolarMesh.AngleLinesDegrees.Count);
+    }
+
+    [Fact]
+    public void FindMaximumPoint_ReturnsGridMaximum()
+    {
+        var sut = new CartesianHeatMapControl();
+        sut.SetGrid(new float[,] { { 0.2f, 0.8f }, { 0.3f, 0.4f } });
+
+        var max = sut.FindMaximumPoint();
+
+        Assert.Equal(0, max.Row);
+        Assert.Equal(1, max.Column);
+        Assert.Equal(0.8f, max.Value, 6);
+    }
+
+    [Fact]
+    public void FindMaxSumRectangle_ReturnsBestRectanglePosition()
+    {
+        var sut = new CartesianHeatMapControl();
+        sut.SetGrid(new float[,]
+        {
+            { 1f, 1f, 1f },
+            { 1f, 5f, 5f },
+            { 1f, 5f, 5f }
+        });
+
+        var rect = sut.FindMaxSumRectangle(rectangleHeight: 2, rectangleWidth: 2);
+
+        Assert.Equal(1, rect.TopRow);
+        Assert.Equal(1, rect.LeftColumn);
+        Assert.Equal(20f, rect.Sum, 6);
     }
 
 }

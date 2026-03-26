@@ -71,14 +71,18 @@
                     BorderBrush="#D1D5DB"
                     Background="White">
                 <Grid x:Name="HeatMapViewport"
+                      ClipToBounds="True"
                       MouseLeftButtonDown="HeatMapViewport_OnMouseLeftButtonDown">
-                    <Image x:Name="HeatMapImage"
-                           Stretch="Uniform"
-                           SnapsToDevicePixels="True"
-                           UseLayoutRounding="True" />
-                    <Canvas x:Name="OverlayCanvas"
-                            ClipToBounds="True"
-                            Background="Transparent" />
+                    <Grid x:Name="PanZoomContent"
+                          RenderTransformOrigin="0,0">
+                        <Image x:Name="HeatMapImage"
+                               Stretch="Uniform"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True" />
+                        <Canvas x:Name="OverlayCanvas"
+                                ClipToBounds="True"
+                                Background="Transparent" />
+                    </Grid>
                 </Grid>
             </Border>
 

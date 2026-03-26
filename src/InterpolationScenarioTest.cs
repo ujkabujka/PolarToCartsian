@@ -13,27 +13,38 @@ public static class InterpolationScenarioTest
         var cartesianGrid = interpolator.BuildCartesianTemperatureGrid(400);
         ReplaceInvalidValuesWithZero(cartesianGrid);
 
-        var kernel = new double[,]
-        {
-            { 1d / 16d, 2d / 16d, 1d / 16d },
-            { 2d / 16d, 4d / 16d, 2d / 16d },
-            { 1d / 16d, 2d / 16d, 1d / 16d }
-        };
+        var kernel2D = CartesianConvolutionFilter.CreateNormalKernel(length: 9, r: 1.8);
+        var kernel1D = CartesianConvolutionFilter.CreateSeparableNormalKernel1D(length: 9, r: 1.8);
 
-        var convolutionWatch = Stopwatch.StartNew();
-        var filteredGrid = CartesianConvolutionFilter.Apply(cartesianGrid, kernel);
-        convolutionWatch.Stop();
+        var single2D = RunAndMeasure(() => CartesianConvolutionFilter.ApplySingleThread(cartesianGrid, kernel2D));
+        var parallel2D = RunAndMeasure(() => CartesianConvolutionFilter.ApplyParallel(cartesianGrid, kernel2D));
+        var singleSeparable = RunAndMeasure(() => CartesianConvolutionFilter.ApplySeparableSingleThread(cartesianGrid, kernel1D));
+        var parallelSeparable = RunAndMeasure(() => CartesianConvolutionFilter.ApplySeparableParallel(cartesianGrid, kernel1D));
+
+        var filteredGrid = parallelSeparable.Grid;
 
         ValidateGrid(filteredGrid, 400);
 
         return new ScenarioTestResult(
             interpolationResult,
-            convolutionWatch.Elapsed.TotalMilliseconds,
+            new ConvolutionBenchmarkResult(
+                single2D.ElapsedMilliseconds,
+                parallel2D.ElapsedMilliseconds,
+                singleSeparable.ElapsedMilliseconds,
+                parallelSeparable.ElapsedMilliseconds),
             filteredGrid[200, 200],
             filteredGrid[0, 0]);
     }
 
-    private static void ReplaceInvalidValuesWithZero(double[,] grid)
+    private static (float[,] Grid, double ElapsedMilliseconds) RunAndMeasure(Func<float[,]> operation)
+    {
+        var watch = Stopwatch.StartNew();
+        var grid = operation();
+        watch.Stop();
+        return (grid, watch.Elapsed.TotalMilliseconds);
+    }
+
+    private static void ReplaceInvalidValuesWithZero(float[,] grid)
     {
         for (var row = 0; row < grid.GetLength(0); row++)
         {
@@ -45,7 +56,7 @@ public static class InterpolationScenarioTest
         }
     }
 
-    private static void ValidateGrid(double[,] grid, int expectedSize)
+    private static void ValidateGrid(float[,] grid, int expectedSize)
     {
         if (grid.GetLength(0) != expectedSize || grid.GetLength(1) != expectedSize)
             throw new InvalidOperationException("Grid boyutu beklenen 400x400 değil.");
@@ -64,6 +75,12 @@ public static class InterpolationScenarioTest
 
 public readonly record struct ScenarioTestResult(
     PerformanceResult Interpolation,
-    double ConvolutionElapsedMilliseconds,
+    ConvolutionBenchmarkResult ConvolutionBenchmark,
     double FilteredCenterTemperature,
     double FilteredCornerTemperature);
+
+public readonly record struct ConvolutionBenchmarkResult(
+    double SingleThread2DElapsedMilliseconds,
+    double Parallel2DElapsedMilliseconds,
+    double SingleThreadSeparableElapsedMilliseconds,
+    double ParallelSeparableElapsedMilliseconds);
