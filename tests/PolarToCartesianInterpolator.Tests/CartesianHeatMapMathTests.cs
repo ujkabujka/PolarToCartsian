@@ -40,8 +40,8 @@ public sealed class CartesianHeatMapMathTests
         Assert.Equal(2, result.Height);
         Assert.Equal(2, result.Width);
         Assert.Equal(36f, result.Sum, 6);
-        Assert.Equal(1.5, result.CenterRow, 6);
-        Assert.Equal(1.5, result.CenterColumn, 6);
+        Assert.Equal(1.5f, result.CenterRow, 6);
+        Assert.Equal(1.5f, result.CenterColumn, 6);
     }
 
     [Fact]
@@ -62,16 +62,16 @@ public sealed class CartesianHeatMapMathTests
     {
         var input = new float[,]
         {
-            { 0.0, 0.25 },
-            { 0.60, 1.0 }
+            { 0.0f, 0.25f },
+            { 0.60f, 1.0f }
         };
 
         var result = CartesianHeatMapMath.SubtractFromOne(input);
 
-        Assert.Equal(1.0, result[0, 0], 6);
-        Assert.Equal(0.75, result[0, 1], 6);
-        Assert.Equal(0.40, result[1, 0], 6);
-        Assert.Equal(0.0, result[1, 1], 6);
+        Assert.Equal(1.0f, result[0, 0], 6);
+        Assert.Equal(0.75f, result[0, 1], 6);
+        Assert.Equal(0.40f, result[1, 0], 6);
+        Assert.Equal(0.0f, result[1, 1], 6);
     }
 
     [Fact]
@@ -79,31 +79,31 @@ public sealed class CartesianHeatMapMathTests
     {
         var left = new float[,]
         {
-            { 1.0, 0.5 },
-            { 0.2, 0.8 }
+            { 1.0f, 0.5f },
+            { 0.2f, 0.8f }
         };
         var right = new float[,]
         {
-            { 0.1, 0.4 },
-            { 0.5, 0.25 }
+            { 0.1f, 0.4f },
+            { 0.5f, 0.25f }
         };
 
         var result = CartesianHeatMapMath.MultiplyElementWise(left, right);
 
-        Assert.Equal(0.1, result[0, 0], 6);
-        Assert.Equal(0.2, result[0, 1], 6);
-        Assert.Equal(0.1, result[1, 0], 6);
-        Assert.Equal(0.2, result[1, 1], 6);
+        Assert.Equal(0.1f, result[0, 0], 6);
+        Assert.Equal(0.2f, result[0, 1], 6);
+        Assert.Equal(0.1f, result[1, 0], 6);
+        Assert.Equal(0.2f, result[1, 1], 6);
     }
 
     [Fact]
     public void MultiplyElementWise_WithDifferentDimensions_Throws()
     {
-        var left = new float[,] { { 1.0, 0.5 } };
+        var left = new float[,] { { 1.0f, 0.5f } };
         var right = new float[,]
         {
-            { 0.1, 0.4 },
-            { 0.5, 0.25 }
+            { 0.1f, 0.4f },
+            { 0.5f, 0.25f }
         };
 
         Assert.Throws<ArgumentException>(() => CartesianHeatMapMath.MultiplyElementWise(left, right));
@@ -122,19 +122,19 @@ public sealed class CartesianHeatMapMathTests
     {
         var input = new float[,]
         {
-            { 0.2, 0.4 },
-            { 0.6, 0.8 }
+            { 0.2f, 0.4f },
+            { 0.6f, 0.8f }
         };
 
-        var result = CartesianHeatMapMath.CalculateTemperatureTimesArea(input, cellSize: 2.0);
+        var result = CartesianHeatMapMath.CalculateTemperatureTimesArea(input, cellSize: 2.0f);
 
-        Assert.Equal(2.0, result, 6);
+        Assert.Equal(2.0f, result, 6);
     }
 
     [Fact]
     public void CalculateTemperatureTimesArea_WithTooSmallGrid_Throws()
     {
-        var input = new float[,] { { 0.2 } };
+        var input = new float[,] { { 0.2f } };
 
         Assert.Throws<ArgumentException>(() => CartesianHeatMapMath.CalculateTemperatureTimesArea(input));
     }
@@ -144,16 +144,16 @@ public sealed class CartesianHeatMapMathTests
     {
         var input = new float[,]
         {
-            { 0.49, 0.50 },
-            { 0.90, 0.10 }
+            { 0.49f, 0.50f },
+            { 0.90f, 0.10f }
         };
 
-        var result = CartesianHeatMapMath.ApplyBinaryThreshold(input, threshold: 0.5);
+        var result = CartesianHeatMapMath.ApplyBinaryThreshold(input, threshold: 0.5f);
 
-        Assert.Equal(0.0, result[0, 0], 6);
-        Assert.Equal(1.0, result[0, 1], 6);
-        Assert.Equal(1.0, result[1, 0], 6);
-        Assert.Equal(0.0, result[1, 1], 6);
+        Assert.Equal(0.0f, result[0, 0], 6);
+        Assert.Equal(1.0f, result[0, 1], 6);
+        Assert.Equal(1.0f, result[1, 0], 6);
+        Assert.Equal(0.0f, result[1, 1], 6);
     }
 
     [Fact]
@@ -161,13 +161,13 @@ public sealed class CartesianHeatMapMathTests
     {
         var input = new float[,]
         {
-            { 0.49, 0.50 },
-            { 0.90, 0.10 }
+            { 0.49f, 0.50f },
+            { 0.90f, 0.10f }
         };
 
-        var result = CartesianHeatMapMath.CalculateThresholdedTemperatureTimesArea(input, threshold: 0.5, cellSize: 2.0);
+        var result = CartesianHeatMapMath.CalculateThresholdedTemperatureTimesArea(input, threshold: 0.5f, cellSize: 2.0f);
 
-        Assert.Equal(2.0, result, 6);
+        Assert.Equal(2.0f, result, 6);
     }
 
     [Fact]
@@ -175,11 +175,11 @@ public sealed class CartesianHeatMapMathTests
     {
         var input = new float[,]
         {
-            { 0.2, 0.4 },
-            { 0.6, 0.8 }
+            { 0.2f, 0.4f },
+            { 0.6f, 0.8f }
         };
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            CartesianHeatMapMath.CalculateThresholdedTemperatureTimesArea(input, threshold: 1.1));
+            CartesianHeatMapMath.CalculateThresholdedTemperatureTimesArea(input, threshold: 1.1f));
     }
 }
