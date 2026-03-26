@@ -306,6 +306,7 @@ public partial class CartesianHeatMapView : UserControl
             return;
 
         var zoom = _zoomTransform.ScaleX;
+<<<<<<< codex/optimize-grid-data-and-convolution-operations
         if (zoom <= 1.0)
         {
             _panTransform.X = 0;
@@ -321,6 +322,13 @@ public partial class CartesianHeatMapView : UserControl
 
         _panTransform.X = Math.Clamp(_panTransform.X, minPanX, 0);
         _panTransform.Y = Math.Clamp(_panTransform.Y, minPanY, 0);
+=======
+        var maxPanX = (viewportWidth * (zoom - 1)) / 2.0;
+        var maxPanY = (viewportHeight * (zoom - 1)) / 2.0;
+
+        _panTransform.X = Math.Clamp(_panTransform.X, -maxPanX, maxPanX);
+        _panTransform.Y = Math.Clamp(_panTransform.Y, -maxPanY, maxPanY);
+>>>>>>> main
     }
 
     private Rect GetHeatMapDrawRect()
