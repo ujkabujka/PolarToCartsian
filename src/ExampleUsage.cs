@@ -2,7 +2,7 @@ namespace PolarToCartesianInterpolator;
 
 public static class ExampleUsage
 {
-    public static double[,] Create400By400SampleGrid()
+    public static float[,] Create400By400SampleGrid()
     {
         var rings = new List<RadiusValues>
         {

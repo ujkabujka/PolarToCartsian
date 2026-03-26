@@ -16,7 +16,7 @@ public partial class CartesianHeatMapView : UserControl
 {
     public static readonly DependencyProperty GridDataProperty = DependencyProperty.Register(
         nameof(GridData),
-        typeof(double[,]),
+        typeof(float[,]),
         typeof(CartesianHeatMapView),
         new PropertyMetadata(null, OnVisualInputChanged));
 
@@ -26,11 +26,27 @@ public partial class CartesianHeatMapView : UserControl
         typeof(CartesianHeatMapView),
         new PropertyMetadata(0.1d, OnVisualInputChanged));
 
+    public static readonly DependencyProperty MaxPointOverlayProperty = DependencyProperty.Register(
+        nameof(MaxPointOverlay),
+        typeof(GridMaxPoint?),
+        typeof(CartesianHeatMapView),
+        new PropertyMetadata(null, OnOverlayInputChanged));
+
+    public static readonly DependencyProperty RectangleOverlayProperty = DependencyProperty.Register(
+        nameof(RectangleOverlay),
+        typeof(MaxSumRectangle?),
+        typeof(CartesianHeatMapView),
+        new PropertyMetadata(null, OnOverlayInputChanged));
+
     private HeatMapRenderData? _lastRenderData;
     private CartesianHeatMapControl? _heatMapControl;
     private Border? _activeProbeBox;
     private Shape? _activeProbeMark;
     private DispatcherTimer? _probeTimer;
+    private readonly ScaleTransform _zoomTransform = new(1, 1);
+    private readonly TranslateTransform _panTransform = new(0, 0);
+    private bool _isPanning;
+    private Point _lastPanPoint;
 
     public CartesianHeatMapView()
     {
@@ -44,18 +60,28 @@ public partial class CartesianHeatMapView : UserControl
 
         HeatMapViewport.SizeChanged += (_, _) =>
         {
+            ClampPanOffsets();
             RedrawOverlays();
             RedrawAxes();
         };
+        HeatMapViewport.MouseWheel += HeatMapViewport_OnMouseWheel;
+        HeatMapViewport.MouseMove += HeatMapViewport_OnMouseMove;
+        HeatMapViewport.MouseDown += HeatMapViewport_OnMouseDown;
+        HeatMapViewport.MouseUp += HeatMapViewport_OnMouseUp;
 
         XAxisCanvas.SizeChanged += (_, _) => RedrawAxes();
         YAxisCanvas.SizeChanged += (_, _) => RedrawAxes();
         LegendCanvas.SizeChanged += (_, _) => DrawLegendLabels();
+
+        var transformGroup = new TransformGroup();
+        transformGroup.Children.Add(_zoomTransform);
+        transformGroup.Children.Add(_panTransform);
+        PanZoomContent.RenderTransform = transformGroup;
     }
 
-    public double[,]? GridData
+    public float[,]? GridData
     {
-        get => (double[,]?)GetValue(GridDataProperty);
+        get => (float[,]?)GetValue(GridDataProperty);
         set => SetValue(GridDataProperty, value);
     }
 
@@ -63,6 +89,18 @@ public partial class CartesianHeatMapView : UserControl
     {
         get => (double)GetValue(CutoffProperty);
         set => SetValue(CutoffProperty, value);
+    }
+
+    public GridMaxPoint? MaxPointOverlay
+    {
+        get => (GridMaxPoint?)GetValue(MaxPointOverlayProperty);
+        set => SetValue(MaxPointOverlayProperty, value);
+    }
+
+    public MaxSumRectangle? RectangleOverlay
+    {
+        get => (MaxSumRectangle?)GetValue(RectangleOverlayProperty);
+        set => SetValue(RectangleOverlayProperty, value);
     }
 
     public void SavePlot(string outputPath)
@@ -114,6 +152,12 @@ public partial class CartesianHeatMapView : UserControl
             control.CutoffTextBox.Text = control.Cutoff.ToString("0.###", CultureInfo.InvariantCulture);
 
         control.RenderHeatMap();
+    }
+
+    private static void OnOverlayInputChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var control = (CartesianHeatMapView)d;
+        control.RedrawOverlays();
     }
 
     private void SavePlotButton_OnClick(object sender, RoutedEventArgs e)
@@ -171,7 +215,7 @@ public partial class CartesianHeatMapView : UserControl
         if (rect.Width <= 0 || rect.Height <= 0)
             return;
 
-        var click = e.GetPosition(HeatMapViewport);
+        var click = TransformViewportPointToContent(e.GetPosition(HeatMapViewport));
         if (!rect.Contains(click))
             return;
 
@@ -185,6 +229,79 @@ public partial class CartesianHeatMapView : UserControl
             return;
 
         ShowProbePopup(click, probe.Value);
+    }
+
+    private Point TransformViewportPointToContent(Point point)
+    {
+        if (PanZoomContent.RenderTransform.Inverse is null)
+            return point;
+
+        return PanZoomContent.RenderTransform.Inverse.Transform(point);
+    }
+
+    private void HeatMapViewport_OnMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var oldZoom = _zoomTransform.ScaleX;
+        var zoomFactor = e.Delta > 0 ? 1.10 : 1 / 1.10;
+        var newZoom = Math.Clamp(oldZoom * zoomFactor, 1.0, 12.0);
+        _zoomTransform.ScaleX = newZoom;
+        _zoomTransform.ScaleY = newZoom;
+
+        ClampPanOffsets();
+        RedrawOverlays();
+    }
+
+    private void HeatMapViewport_OnMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle)
+            return;
+
+        _isPanning = true;
+        _lastPanPoint = e.GetPosition(HeatMapViewport);
+        HeatMapViewport.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void HeatMapViewport_OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isPanning)
+            return;
+
+        var current = e.GetPosition(HeatMapViewport);
+        var deltaX = current.X - _lastPanPoint.X;
+        var deltaY = current.Y - _lastPanPoint.Y;
+
+        _panTransform.X += deltaX;
+        _panTransform.Y += deltaY;
+        _lastPanPoint = current;
+
+        ClampPanOffsets();
+        RedrawOverlays();
+    }
+
+    private void HeatMapViewport_OnMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle)
+            return;
+
+        _isPanning = false;
+        HeatMapViewport.ReleaseMouseCapture();
+        e.Handled = true;
+    }
+
+    private void ClampPanOffsets()
+    {
+        var viewportWidth = HeatMapViewport.ActualWidth;
+        var viewportHeight = HeatMapViewport.ActualHeight;
+        if (viewportWidth <= 0 || viewportHeight <= 0)
+            return;
+
+        var zoom = _zoomTransform.ScaleX;
+        var maxPanX = (viewportWidth * (zoom - 1)) / 2.0;
+        var maxPanY = (viewportHeight * (zoom - 1)) / 2.0;
+
+        _panTransform.X = Math.Clamp(_panTransform.X, -maxPanX, maxPanX);
+        _panTransform.Y = Math.Clamp(_panTransform.Y, -maxPanY, maxPanY);
     }
 
     private Rect GetHeatMapDrawRect()
@@ -386,6 +503,9 @@ public partial class CartesianHeatMapView : UserControl
         Canvas.SetTop(centerMarker, centerY - 2);
         OverlayCanvas.Children.Add(centerMarker);
 
+        DrawRectangleOverlay(drawRect, scaleX, scaleY);
+        DrawMaximumPointOverlay(drawRect, scaleX, scaleY);
+
         if (_activeProbeMark is not null)
             OverlayCanvas.Children.Add(_activeProbeMark);
         if (_activeProbeBox is not null)
@@ -402,6 +522,65 @@ public partial class CartesianHeatMapView : UserControl
 
         DrawXAxis();
         DrawYAxis();
+    }
+
+    private void DrawMaximumPointOverlay(Rect drawRect, double scaleX, double scaleY)
+    {
+        if (MaxPointOverlay is null)
+            return;
+
+        var point = MaxPointOverlay.Value;
+        var x = drawRect.Left + (point.Column * scaleX);
+        var y = drawRect.Top + (point.Row * scaleY);
+        var star = CreateStar(x, y, outerRadius: 8, innerRadius: 4, points: 5);
+        star.Stroke = Brushes.Black;
+        star.StrokeThickness = 1.2;
+        star.Fill = Brushes.Gold;
+        OverlayCanvas.Children.Add(star);
+    }
+
+    private void DrawRectangleOverlay(Rect drawRect, double scaleX, double scaleY)
+    {
+        if (RectangleOverlay is null)
+            return;
+
+        var rectangle = RectangleOverlay.Value;
+        var left = drawRect.Left + (rectangle.LeftColumn * scaleX);
+        var top = drawRect.Top + (rectangle.TopRow * scaleY);
+        var width = Math.Max(2.0, rectangle.Width * scaleX);
+        var height = Math.Max(2.0, rectangle.Height * scaleY);
+
+        var overlay = new Rectangle
+        {
+            Width = width,
+            Height = height,
+            Stroke = Brushes.LimeGreen,
+            StrokeThickness = 2,
+            Fill = Brushes.Transparent
+        };
+        Canvas.SetLeft(overlay, left);
+        Canvas.SetTop(overlay, top);
+        OverlayCanvas.Children.Add(overlay);
+    }
+
+    private static Polygon CreateStar(double centerX, double centerY, double outerRadius, double innerRadius, int points)
+    {
+        var polygon = new Polygon();
+        var geometryPoints = new PointCollection(points * 2);
+        var angleStep = Math.PI / points;
+        var startAngle = -Math.PI / 2;
+
+        for (var i = 0; i < points * 2; i++)
+        {
+            var radius = i % 2 == 0 ? outerRadius : innerRadius;
+            var angle = startAngle + (i * angleStep);
+            geometryPoints.Add(new Point(
+                centerX + (Math.Cos(angle) * radius),
+                centerY + (Math.Sin(angle) * radius)));
+        }
+
+        polygon.Points = geometryPoints;
+        return polygon;
     }
 
     private void DrawXAxis()
