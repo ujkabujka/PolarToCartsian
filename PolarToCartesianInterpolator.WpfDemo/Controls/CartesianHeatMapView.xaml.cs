@@ -43,6 +43,10 @@ public partial class CartesianHeatMapView : UserControl
     private Border? _activeProbeBox;
     private Shape? _activeProbeMark;
     private DispatcherTimer? _probeTimer;
+    private readonly ScaleTransform _zoomTransform = new(1, 1);
+    private readonly TranslateTransform _panTransform = new(0, 0);
+    private bool _isPanning;
+    private Point _lastPanPoint;
 
     public CartesianHeatMapView()
     {
@@ -56,13 +60,23 @@ public partial class CartesianHeatMapView : UserControl
 
         HeatMapViewport.SizeChanged += (_, _) =>
         {
+            ClampPanOffsets();
             RedrawOverlays();
             RedrawAxes();
         };
+        HeatMapViewport.MouseWheel += HeatMapViewport_OnMouseWheel;
+        HeatMapViewport.MouseMove += HeatMapViewport_OnMouseMove;
+        HeatMapViewport.MouseDown += HeatMapViewport_OnMouseDown;
+        HeatMapViewport.MouseUp += HeatMapViewport_OnMouseUp;
 
         XAxisCanvas.SizeChanged += (_, _) => RedrawAxes();
         YAxisCanvas.SizeChanged += (_, _) => RedrawAxes();
         LegendCanvas.SizeChanged += (_, _) => DrawLegendLabels();
+
+        var transformGroup = new TransformGroup();
+        transformGroup.Children.Add(_zoomTransform);
+        transformGroup.Children.Add(_panTransform);
+        PanZoomContent.RenderTransform = transformGroup;
     }
 
     public float[,]? GridData
@@ -201,7 +215,7 @@ public partial class CartesianHeatMapView : UserControl
         if (rect.Width <= 0 || rect.Height <= 0)
             return;
 
-        var click = e.GetPosition(HeatMapViewport);
+        var click = TransformViewportPointToContent(e.GetPosition(HeatMapViewport));
         if (!rect.Contains(click))
             return;
 
@@ -215,6 +229,79 @@ public partial class CartesianHeatMapView : UserControl
             return;
 
         ShowProbePopup(click, probe.Value);
+    }
+
+    private Point TransformViewportPointToContent(Point point)
+    {
+        if (PanZoomContent.RenderTransform.Inverse is null)
+            return point;
+
+        return PanZoomContent.RenderTransform.Inverse.Transform(point);
+    }
+
+    private void HeatMapViewport_OnMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var oldZoom = _zoomTransform.ScaleX;
+        var zoomFactor = e.Delta > 0 ? 1.10 : 1 / 1.10;
+        var newZoom = Math.Clamp(oldZoom * zoomFactor, 1.0, 12.0);
+        _zoomTransform.ScaleX = newZoom;
+        _zoomTransform.ScaleY = newZoom;
+
+        ClampPanOffsets();
+        RedrawOverlays();
+    }
+
+    private void HeatMapViewport_OnMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle)
+            return;
+
+        _isPanning = true;
+        _lastPanPoint = e.GetPosition(HeatMapViewport);
+        HeatMapViewport.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void HeatMapViewport_OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isPanning)
+            return;
+
+        var current = e.GetPosition(HeatMapViewport);
+        var deltaX = current.X - _lastPanPoint.X;
+        var deltaY = current.Y - _lastPanPoint.Y;
+
+        _panTransform.X += deltaX;
+        _panTransform.Y += deltaY;
+        _lastPanPoint = current;
+
+        ClampPanOffsets();
+        RedrawOverlays();
+    }
+
+    private void HeatMapViewport_OnMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle)
+            return;
+
+        _isPanning = false;
+        HeatMapViewport.ReleaseMouseCapture();
+        e.Handled = true;
+    }
+
+    private void ClampPanOffsets()
+    {
+        var viewportWidth = HeatMapViewport.ActualWidth;
+        var viewportHeight = HeatMapViewport.ActualHeight;
+        if (viewportWidth <= 0 || viewportHeight <= 0)
+            return;
+
+        var zoom = _zoomTransform.ScaleX;
+        var maxPanX = (viewportWidth * (zoom - 1)) / 2.0;
+        var maxPanY = (viewportHeight * (zoom - 1)) / 2.0;
+
+        _panTransform.X = Math.Clamp(_panTransform.X, -maxPanX, maxPanX);
+        _panTransform.Y = Math.Clamp(_panTransform.Y, -maxPanY, maxPanY);
     }
 
     private Rect GetHeatMapDrawRect()
