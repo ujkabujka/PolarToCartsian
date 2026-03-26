@@ -258,6 +258,7 @@ public partial class CartesianHeatMapView : UserControl
 
         ClampPanOffsets();
         RedrawOverlays();
+        RedrawAxes();
     }
 
     private void HeatMapViewport_OnMouseDown(object sender, MouseButtonEventArgs e)
@@ -286,6 +287,7 @@ public partial class CartesianHeatMapView : UserControl
 
         ClampPanOffsets();
         RedrawOverlays();
+        RedrawAxes();
     }
 
     private void HeatMapViewport_OnMouseUp(object sender, MouseButtonEventArgs e)
@@ -334,6 +336,55 @@ public partial class CartesianHeatMapView : UserControl
         var left = (HeatMapViewport.ActualWidth - drawWidth) / 2.0;
         var top = (HeatMapViewport.ActualHeight - drawHeight) / 2.0;
         return new Rect(left, top, drawWidth, drawHeight);
+    }
+
+    private Rect GetVisibleContentRect()
+    {
+        var drawRect = GetHeatMapDrawRect();
+        if (drawRect.IsEmpty || drawRect.Width <= 0 || drawRect.Height <= 0)
+            return Rect.Empty;
+
+        var viewportWidth = HeatMapViewport.ActualWidth;
+        var viewportHeight = HeatMapViewport.ActualHeight;
+        if (viewportWidth <= 0 || viewportHeight <= 0)
+            return Rect.Empty;
+
+        var viewportCorners = new[]
+        {
+            TransformViewportPointToContent(new Point(0, 0)),
+            TransformViewportPointToContent(new Point(viewportWidth, 0)),
+            TransformViewportPointToContent(new Point(0, viewportHeight)),
+            TransformViewportPointToContent(new Point(viewportWidth, viewportHeight))
+        };
+
+        var minX = viewportCorners.Min(point => point.X);
+        var maxX = viewportCorners.Max(point => point.X);
+        var minY = viewportCorners.Min(point => point.Y);
+        var maxY = viewportCorners.Max(point => point.Y);
+
+        var visibleInContent = new Rect(new Point(minX, minY), new Point(maxX, maxY));
+        visibleInContent.Intersect(drawRect);
+        return visibleInContent;
+    }
+
+    private double MapContentXToCartesian(Rect drawRect, double contentX)
+    {
+        if (drawRect.Width <= 0)
+            return 0;
+
+        var halfRange = GetOuterRadiusInCartesianUnits();
+        var t = (contentX - drawRect.Left) / drawRect.Width;
+        return -halfRange + (2 * halfRange * t);
+    }
+
+    private double MapContentYToCartesian(Rect drawRect, double contentY)
+    {
+        if (drawRect.Height <= 0)
+            return 0;
+
+        var halfRange = GetOuterRadiusInCartesianUnits();
+        var t = (contentY - drawRect.Top) / drawRect.Height;
+        return halfRange - (2 * halfRange * t);
     }
 
     private void ClearActiveProbe()
@@ -612,25 +663,29 @@ public partial class CartesianHeatMapView : UserControl
         if (drawRect.Width <= 0)
             return;
 
-        var startX = drawRect.Left;
-        var endX = drawRect.Right;
-        var axisY = 12.0;
+        var visibleRect = GetVisibleContentRect();
+        if (visibleRect.Width <= 0)
+            return;
 
-        var axisLine = new Line { X1 = startX, Y1 = axisY, X2 = endX - 10, Y2 = axisY, Stroke = Brushes.Black, StrokeThickness = 1.2 };
+        var startX = visibleRect.Left;
+        var endX = visibleRect.Right;
+        var axisY = 12.0;
+        var arrowBaseX = Math.Max(startX, endX - 10);
+
+        var axisLine = new Line { X1 = startX, Y1 = axisY, X2 = arrowBaseX, Y2 = axisY, Stroke = Brushes.Black, StrokeThickness = 1.2 };
         XAxisCanvas.Children.Add(axisLine);
         XAxisCanvas.Children.Add(new Polygon
         {
-            Points = new PointCollection { new(endX - 10, axisY - 4), new(endX, axisY), new(endX - 10, axisY + 4) },
+            Points = new PointCollection { new(arrowBaseX, axisY - 4), new(endX, axisY), new(arrowBaseX, axisY + 4) },
             Fill = Brushes.Black
         });
 
-        var halfRange = GetOuterRadiusInCartesianUnits();
         var tickCount = 9;
         for (var i = 0; i < tickCount; i++)
         {
             var t = i / (double)(tickCount - 1);
-            var x = startX + (t * (drawRect.Width));
-            var value = (-halfRange) + (2 * halfRange * t);
+            var x = startX + (t * visibleRect.Width);
+            var value = MapContentXToCartesian(drawRect, x);
 
             XAxisCanvas.Children.Add(new Line { X1 = x, Y1 = axisY, X2 = x, Y2 = axisY + 5, Stroke = Brushes.Black, StrokeThickness = 1 });
             var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
@@ -655,25 +710,29 @@ public partial class CartesianHeatMapView : UserControl
         if (drawRect.Height <= 0)
             return;
 
-        var axisX = YAxisCanvas.ActualWidth - 12;
-        var startY = drawRect.Top;
-        var endY = drawRect.Bottom;
+        var visibleRect = GetVisibleContentRect();
+        if (visibleRect.Height <= 0)
+            return;
 
-        YAxisCanvas.Children.Add(new Line { X1 = axisX, Y1 = endY, X2 = axisX, Y2 = startY + 10, Stroke = Brushes.Black, StrokeThickness = 1.2 });
+        var axisX = YAxisCanvas.ActualWidth - 12;
+        var startY = visibleRect.Top;
+        var endY = visibleRect.Bottom;
+        var arrowBaseY = Math.Min(endY, startY + 10);
+
+        YAxisCanvas.Children.Add(new Line { X1 = axisX, Y1 = endY, X2 = axisX, Y2 = arrowBaseY, Stroke = Brushes.Black, StrokeThickness = 1.2 });
         YAxisCanvas.Children.Add(new Polygon
         {
-            Points = new PointCollection { new(axisX - 4, startY + 10), new(axisX, startY), new(axisX + 4, startY + 10) },
+            Points = new PointCollection { new(axisX - 4, arrowBaseY), new(axisX, startY), new(axisX + 4, arrowBaseY) },
             Fill = Brushes.Black
         });
 
-        var halfRange = GetOuterRadiusInCartesianUnits();
         var tickCount = 9;
 
         for (var i = 0; i < tickCount; i++)
         {
             var t = i / (double)(tickCount - 1);
-            var y = startY + (t * (drawRect.Height));
-            var value = halfRange - (2 * halfRange * t);
+            var y = startY + (t * visibleRect.Height);
+            var value = MapContentYToCartesian(drawRect, y);
 
             YAxisCanvas.Children.Add(new Line { X1 = axisX, Y1 = y, X2 = axisX - 5, Y2 = y, Stroke = Brushes.Black, StrokeThickness = 1 });
             var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
