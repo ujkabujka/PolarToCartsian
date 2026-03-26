@@ -666,8 +666,7 @@ public partial class CartesianHeatMapView : UserControl
         {
             var t = i / (double)(tickCount - 1);
             var x = AxisViewportMath.Interpolate(startX, endX, t);
-            var visibleContentX = AxisViewportMath.Interpolate(visibleRect.Left, visibleRect.Right, t);
-            var value = AxisViewportMath.MapContentXToCartesian(drawRect.Left, drawRect.Width, halfRange, visibleContentX);
+            var value = AxisViewportMath.MapContentXToCartesian(drawRect.Left, drawRect.Width, halfRange, x);
 
             XAxisCanvas.Children.Add(new Line { X1 = x, Y1 = axisY, X2 = x, Y2 = axisY + 5, Stroke = Brushes.Black, StrokeThickness = 1 });
             var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
