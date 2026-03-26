@@ -239,6 +239,11 @@ public partial class CartesianHeatMapView : UserControl
         return PanZoomContent.RenderTransform.Inverse.Transform(point);
     }
 
+    private Point TransformContentPointToViewport(Point point)
+    {
+        return PanZoomContent.RenderTransform.Transform(point);
+    }
+
     private void HeatMapViewport_OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
         var zoomPoint = e.GetPosition(HeatMapViewport);
@@ -647,8 +652,33 @@ public partial class CartesianHeatMapView : UserControl
         if (visibleRect.Width <= 0)
             return;
 
-        var startX = drawRect.Left;
-        var endX = drawRect.Right;
+        if (_lastRenderData is null)
+            return;
+
+        var pixelWidth = _lastRenderData.Pixels.GetLength(1);
+        var pixelHeight = _lastRenderData.Pixels.GetLength(0);
+        if (pixelWidth <= 1 || pixelHeight <= 1)
+            return;
+
+        var scaleX = drawRect.Width / (pixelWidth - 1);
+        var scaleY = drawRect.Height / (pixelHeight - 1);
+        var radiusScale = Math.Min(scaleX, scaleY);
+        var centerX = drawRect.Left + (((pixelWidth - 1) / 2.0) * scaleX);
+        var centerY = drawRect.Top + (((pixelHeight - 1) / 2.0) * scaleY);
+        var maxRadius = _lastRenderData.PolarMesh.CircleRadiiPixels.Count > 0
+            ? _lastRenderData.PolarMesh.CircleRadiiPixels[^1] * radiusScale
+            : Math.Min(drawRect.Width, drawRect.Height) / 2.0;
+
+        var startContentX = centerX - maxRadius;
+        var endContentX = centerX + maxRadius;
+
+        var startX = TransformContentPointToViewport(new Point(startContentX, centerY)).X;
+        var endX = TransformContentPointToViewport(new Point(endContentX, centerY)).X;
+        var axisSegmentVisibleStart = Math.Max(0, Math.Min(width, startX));
+        var axisSegmentVisibleEnd = Math.Max(0, Math.Min(width, endX));
+        if (axisSegmentVisibleEnd - axisSegmentVisibleStart <= 1e-6)
+            return;
+
         var axisY = 12.0;
         var arrowBaseX = Math.Max(startX, endX - 10);
         var halfRange = GetOuterRadiusInCartesianUnits();
@@ -665,8 +695,9 @@ public partial class CartesianHeatMapView : UserControl
         for (var i = 0; i < tickCount; i++)
         {
             var t = i / (double)(tickCount - 1);
-            var x = AxisViewportMath.Interpolate(startX, endX, t);
-            var value = AxisViewportMath.MapContentXToCartesian(drawRect.Left, drawRect.Width, halfRange, x);
+            var x = AxisViewportMath.Interpolate(axisSegmentVisibleStart, axisSegmentVisibleEnd, t);
+            var contentX = TransformViewportPointToContent(new Point(x, centerY)).X;
+            var value = AxisViewportMath.MapContentXToCartesian(drawRect.Left, drawRect.Width, halfRange, contentX);
 
             XAxisCanvas.Children.Add(new Line { X1 = x, Y1 = axisY, X2 = x, Y2 = axisY + 5, Stroke = Brushes.Black, StrokeThickness = 1 });
             var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
