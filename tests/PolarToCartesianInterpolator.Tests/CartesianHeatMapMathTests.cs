@@ -8,7 +8,7 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void SubtractFromOne_ReturnsOneMinusEachCell()
     {
-        var input = new double[,]
+        var input = new float[,]
         {
             { 0.0, 0.25 },
             { 0.60, 1.0 }
@@ -25,12 +25,12 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void MultiplyElementWise_WithSameDimensions_MultipliesEachCell()
     {
-        var left = new double[,]
+        var left = new float[,]
         {
             { 1.0, 0.5 },
             { 0.2, 0.8 }
         };
-        var right = new double[,]
+        var right = new float[,]
         {
             { 0.1, 0.4 },
             { 0.5, 0.25 }
@@ -47,8 +47,8 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void MultiplyElementWise_WithDifferentDimensions_Throws()
     {
-        var left = new double[,] { { 1.0, 0.5 } };
-        var right = new double[,]
+        var left = new float[,] { { 1.0, 0.5 } };
+        var right = new float[,]
         {
             { 0.1, 0.4 },
             { 0.5, 0.25 }
@@ -60,7 +60,7 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void SubtractFromOne_WithEmptyHeatMap_Throws()
     {
-        var input = new double[0, 0];
+        var input = new float[0, 0];
 
         Assert.Throws<ArgumentException>(() => CartesianHeatMapMath.SubtractFromOne(input));
     }
@@ -68,7 +68,7 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void CalculateTemperatureTimesArea_UsesAverageOfFourCornersPerCell()
     {
-        var input = new double[,]
+        var input = new float[,]
         {
             { 0.2, 0.4 },
             { 0.6, 0.8 }
@@ -82,7 +82,7 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void CalculateTemperatureTimesArea_WithTooSmallGrid_Throws()
     {
-        var input = new double[,] { { 0.2 } };
+        var input = new float[,] { { 0.2 } };
 
         Assert.Throws<ArgumentException>(() => CartesianHeatMapMath.CalculateTemperatureTimesArea(input));
     }
@@ -90,7 +90,7 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void ApplyBinaryThreshold_MapsValuesToZeroAndOne()
     {
-        var input = new double[,]
+        var input = new float[,]
         {
             { 0.49, 0.50 },
             { 0.90, 0.10 }
@@ -107,7 +107,7 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void CalculateThresholdedTemperatureTimesArea_UsesThresholdedBinaryGrid()
     {
-        var input = new double[,]
+        var input = new float[,]
         {
             { 0.49, 0.50 },
             { 0.90, 0.10 }
@@ -121,7 +121,7 @@ public sealed class CartesianHeatMapMathTests
     [Fact]
     public void CalculateThresholdedTemperatureTimesArea_WithInvalidThreshold_Throws()
     {
-        var input = new double[,]
+        var input = new float[,]
         {
             { 0.2, 0.4 },
             { 0.6, 0.8 }

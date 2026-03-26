@@ -11,7 +11,7 @@ public sealed class CartesianHeatMapControl
         new(0.00, new HeatMapColor(0, 0, 255))     // blue
     ];
 
-    private double[,] _grid = new double[0, 0];
+    private float[,] _grid = new float[0, 0];
     private int _gridWidth;
     private int _gridHeight;
     private double _cutoff = 0.1;
@@ -33,7 +33,7 @@ public sealed class CartesianHeatMapControl
         }
     }
 
-    public void SetGrid(double[,] grid)
+    public void SetGrid(float[,] grid)
     {
         ArgumentNullException.ThrowIfNull(grid);
 

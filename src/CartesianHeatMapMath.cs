@@ -2,7 +2,7 @@ namespace PolarToCartesianInterpolator;
 
 public static class CartesianHeatMapMath
 {
-    public static double Sum(double[,] heatMap)
+    public static double Sum(float[,] heatMap)
     {
         var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
         double result = 0;
@@ -18,23 +18,23 @@ public static class CartesianHeatMapMath
         return result;
     }
 
-    public static double[,] SubtractFromOne(double[,] heatMap)
+    public static float[,] SubtractFromOne(float[,] heatMap)
     {
         var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
-        var result = new double[height, width];
+        var result = new float[height, width];
 
         for (var row = 0; row < height; row++)
         {
             for (var col = 0; col < width; col++)
             {
-                result[row, col] = 1.0 - heatMap[row, col];
+                result[row, col] = (float)(1.0 - heatMap[row, col]);
             }
         }
 
         return result;
     }
 
-    public static double CalculateTemperatureTimesArea(double[,] heatMap, double cellSize = 1.0)
+    public static double CalculateTemperatureTimesArea(float[,] heatMap, double cellSize = 1.0)
     {
         var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
         ValidateCellGeometry(height, width, cellSize);
@@ -59,7 +59,7 @@ public static class CartesianHeatMapMath
         return total;
     }
 
-    public static double[,] MultiplyElementWise(double[,] leftHeatMap, double[,] rightHeatMap)
+    public static float[,] MultiplyElementWise(float[,] leftHeatMap, float[,] rightHeatMap)
     {
         var (leftHeight, leftWidth) = GetDimensionsOrThrow(leftHeatMap, nameof(leftHeatMap));
         var (rightHeight, rightWidth) = GetDimensionsOrThrow(rightHeatMap, nameof(rightHeatMap));
@@ -71,7 +71,7 @@ public static class CartesianHeatMapMath
                 nameof(rightHeatMap));
         }
 
-        var result = new double[leftHeight, leftWidth];
+        var result = new float[leftHeight, leftWidth];
 
         for (var row = 0; row < leftHeight; row++)
         {
@@ -84,33 +84,33 @@ public static class CartesianHeatMapMath
         return result;
     }
 
-    public static double[,] ApplyBinaryThreshold(double[,] heatMap, double threshold)
+    public static float[,] ApplyBinaryThreshold(float[,] heatMap, double threshold)
     {
         var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
         ValidateThreshold(threshold);
 
-        var result = new double[height, width];
+        var result = new float[height, width];
 
         for (var row = 0; row < height; row++)
         {
             for (var col = 0; col < width; col++)
             {
                 var value = heatMap[row, col];
-                result[row, col] = double.IsFinite(value) && value >= threshold ? 1.0 : 0.0;
+                result[row, col] = double.IsFinite(value) && value >= threshold ? 1f : 0f;
             }
         }
 
         return result;
     }
 
-    public static double CalculateThresholdedTemperatureTimesArea(double[,] heatMap, double threshold, double cellSize = 1.0)
+    public static double CalculateThresholdedTemperatureTimesArea(float[,] heatMap, double threshold, double cellSize = 1.0)
     {
         ValidateThreshold(threshold);
         var thresholded = ApplyBinaryThreshold(heatMap, threshold);
         return CalculateTemperatureTimesArea(thresholded, cellSize);
     }
 
-    private static (int Height, int Width) GetDimensionsOrThrow(double[,] heatMap, string paramName)
+    private static (int Height, int Width) GetDimensionsOrThrow(float[,] heatMap, string paramName)
     {
         ArgumentNullException.ThrowIfNull(heatMap, paramName);
 

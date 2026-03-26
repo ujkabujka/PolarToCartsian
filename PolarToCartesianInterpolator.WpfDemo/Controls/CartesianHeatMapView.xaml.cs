@@ -16,7 +16,7 @@ public partial class CartesianHeatMapView : UserControl
 {
     public static readonly DependencyProperty GridDataProperty = DependencyProperty.Register(
         nameof(GridData),
-        typeof(double[,]),
+        typeof(float[,]),
         typeof(CartesianHeatMapView),
         new PropertyMetadata(null, OnVisualInputChanged));
 
@@ -53,9 +53,9 @@ public partial class CartesianHeatMapView : UserControl
         LegendCanvas.SizeChanged += (_, _) => DrawLegendLabels();
     }
 
-    public double[,]? GridData
+    public float[,]? GridData
     {
-        get => (double[,]?)GetValue(GridDataProperty);
+        get => (float[,]?)GetValue(GridDataProperty);
         set => SetValue(GridDataProperty, value);
     }
 

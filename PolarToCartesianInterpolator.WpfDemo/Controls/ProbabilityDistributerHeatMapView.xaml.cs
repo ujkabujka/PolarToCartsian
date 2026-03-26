@@ -9,13 +9,13 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
 {
     public static readonly DependencyProperty GridDataProperty = DependencyProperty.Register(
         nameof(GridData),
-        typeof(double[,]),
+        typeof(float[,]),
         typeof(ProbabilityDistributerHeatMapView),
         new PropertyMetadata(null, OnInputChanged));
 
     public static readonly DependencyProperty DisplayGridProperty = DependencyProperty.Register(
         nameof(DisplayGrid),
-        typeof(double[,]),
+        typeof(float[,]),
         typeof(ProbabilityDistributerHeatMapView),
         new PropertyMetadata(null));
 
@@ -35,15 +35,15 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
         Loaded += (_, _) => RefreshGrid();
     }
 
-    public double[,]? GridData
+    public float[,]? GridData
     {
-        get => (double[,]?)GetValue(GridDataProperty);
+        get => (float[,]?)GetValue(GridDataProperty);
         set => SetValue(GridDataProperty, value);
     }
 
-    public double[,]? DisplayGrid
+    public float[,]? DisplayGrid
     {
-        get => (double[,]?)GetValue(DisplayGridProperty);
+        get => (float[,]?)GetValue(DisplayGridProperty);
         private set => SetValue(DisplayGridProperty, value);
     }
 
