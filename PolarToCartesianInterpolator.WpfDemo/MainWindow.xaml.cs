@@ -14,5 +14,5 @@ public partial class MainWindow : Window
 
 public sealed class MainWindowViewModel
 {
-    public double[,] HeatMapGrid { get; } = ExampleUsage.Create400By400SampleGrid();
+    public float[,] HeatMapGrid { get; } = ExampleUsage.Create400By400SampleGrid();
 }

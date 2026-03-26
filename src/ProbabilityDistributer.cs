@@ -4,11 +4,11 @@ public sealed class ProbabilityDistributer
 {
     private static readonly double[] AllowedProbabilities = [0.95d, 0.99d, 0.999d];
 
-    private double[,] _grid = new double[0, 0];
+    private float[,] _grid = new float[0, 0];
     private double _r50;
     private double _targetProbability = 0.95d;
 
-    public ProbabilityDistributer(double[,] grid)
+    public ProbabilityDistributer(float[,] grid)
     {
         SetGrid(grid);
     }
@@ -67,7 +67,7 @@ public sealed class ProbabilityDistributer
         }
     }
 
-    public void SetGrid(double[,] grid)
+    public void SetGrid(float[,] grid)
     {
         ArgumentNullException.ThrowIfNull(grid);
 
@@ -77,21 +77,21 @@ public sealed class ProbabilityDistributer
         _grid = grid;
     }
 
-    public double[,] CreateKernel()
+    public float[,] CreateKernel()
     {
         if (KernelLength <= 1 || SigmaR <= 0)
-            return new double[1, 1] { { 1d } };
+            return new float[1, 1] { { 1f } };
 
         return CartesianConvolutionFilter.CreateNormalKernel(KernelLength, SigmaR);
     }
 
-    public double[,] BuildFilteredGrid()
+    public float[,] BuildFilteredGrid()
     {
         if (KernelLength <= 1 || SigmaR <= 0)
-            return (double[,])_grid.Clone();
+            return (float[,])_grid.Clone();
 
-        var kernel = CreateKernel();
-        return CartesianConvolutionFilter.Apply(_grid, kernel);
+        var kernel1D = CartesianConvolutionFilter.CreateSeparableNormalKernel1D(KernelLength, SigmaR);
+        return CartesianConvolutionFilter.ApplySeparableParallel(_grid, kernel1D);
     }
 
     private static bool IsAllowedProbability(double value)

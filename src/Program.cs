@@ -15,7 +15,10 @@ public static class Program
 
         Console.WriteLine();
         Console.WriteLine("=== Convolution Benchmark ===");
-        Console.WriteLine($"Convolution elapsed: {result.ConvolutionElapsedMilliseconds:F2} ms");
+        Console.WriteLine($"Single-thread 2D elapsed: {result.ConvolutionBenchmark.SingleThread2DElapsedMilliseconds:F2} ms");
+        Console.WriteLine($"Parallel 2D elapsed: {result.ConvolutionBenchmark.Parallel2DElapsedMilliseconds:F2} ms");
+        Console.WriteLine($"Single-thread separable elapsed: {result.ConvolutionBenchmark.SingleThreadSeparableElapsedMilliseconds:F2} ms");
+        Console.WriteLine($"Parallel separable elapsed: {result.ConvolutionBenchmark.ParallelSeparableElapsedMilliseconds:F2} ms");
         Console.WriteLine($"Filtered center sample: {result.FilteredCenterTemperature:F6}");
         Console.WriteLine($"Filtered corner sample: {result.FilteredCornerTemperature:F6}");
 
