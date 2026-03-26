@@ -367,26 +367,6 @@ public partial class CartesianHeatMapView : UserControl
         return visibleInContent;
     }
 
-    private double MapContentXToCartesian(Rect drawRect, double contentX)
-    {
-        if (drawRect.Width <= 0)
-            return 0;
-
-        var halfRange = GetOuterRadiusInCartesianUnits();
-        var t = (contentX - drawRect.Left) / drawRect.Width;
-        return -halfRange + (2 * halfRange * t);
-    }
-
-    private double MapContentYToCartesian(Rect drawRect, double contentY)
-    {
-        if (drawRect.Height <= 0)
-            return 0;
-
-        var halfRange = GetOuterRadiusInCartesianUnits();
-        var t = (contentY - drawRect.Top) / drawRect.Height;
-        return halfRange - (2 * halfRange * t);
-    }
-
     private void ClearActiveProbe()
     {
         _probeTimer?.Stop();
@@ -671,6 +651,7 @@ public partial class CartesianHeatMapView : UserControl
         var endX = visibleRect.Right;
         var axisY = 12.0;
         var arrowBaseX = Math.Max(startX, endX - 10);
+        var halfRange = GetOuterRadiusInCartesianUnits();
 
         var axisLine = new Line { X1 = startX, Y1 = axisY, X2 = arrowBaseX, Y2 = axisY, Stroke = Brushes.Black, StrokeThickness = 1.2 };
         XAxisCanvas.Children.Add(axisLine);
@@ -684,8 +665,8 @@ public partial class CartesianHeatMapView : UserControl
         for (var i = 0; i < tickCount; i++)
         {
             var t = i / (double)(tickCount - 1);
-            var x = startX + (t * visibleRect.Width);
-            var value = MapContentXToCartesian(drawRect, x);
+            var x = AxisViewportMath.Interpolate(startX, endX, t);
+            var value = AxisViewportMath.MapContentXToCartesian(drawRect.Left, drawRect.Width, halfRange, x);
 
             XAxisCanvas.Children.Add(new Line { X1 = x, Y1 = axisY, X2 = x, Y2 = axisY + 5, Stroke = Brushes.Black, StrokeThickness = 1 });
             var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
@@ -715,9 +696,10 @@ public partial class CartesianHeatMapView : UserControl
             return;
 
         var axisX = YAxisCanvas.ActualWidth - 12;
-        var startY = visibleRect.Top;
-        var endY = visibleRect.Bottom;
+        var startY = drawRect.Top;
+        var endY = drawRect.Bottom;
         var arrowBaseY = Math.Min(endY, startY + 10);
+        var halfRange = GetOuterRadiusInCartesianUnits();
 
         YAxisCanvas.Children.Add(new Line { X1 = axisX, Y1 = endY, X2 = axisX, Y2 = arrowBaseY, Stroke = Brushes.Black, StrokeThickness = 1.2 });
         YAxisCanvas.Children.Add(new Polygon
@@ -731,8 +713,9 @@ public partial class CartesianHeatMapView : UserControl
         for (var i = 0; i < tickCount; i++)
         {
             var t = i / (double)(tickCount - 1);
-            var y = startY + (t * visibleRect.Height);
-            var value = MapContentYToCartesian(drawRect, y);
+            var y = AxisViewportMath.Interpolate(startY, endY, t);
+            var visibleContentY = AxisViewportMath.Interpolate(visibleRect.Top, visibleRect.Bottom, t);
+            var value = AxisViewportMath.MapContentYToCartesian(drawRect.Top, drawRect.Height, halfRange, visibleContentY);
 
             YAxisCanvas.Children.Add(new Line { X1 = axisX, Y1 = y, X2 = axisX - 5, Y2 = y, Stroke = Brushes.Black, StrokeThickness = 1 });
             var label = new TextBlock { Text = value.ToString("0", CultureInfo.InvariantCulture), FontSize = 10, Foreground = Brushes.Black };
