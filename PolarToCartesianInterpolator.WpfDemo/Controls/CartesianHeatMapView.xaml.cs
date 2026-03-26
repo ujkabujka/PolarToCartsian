@@ -647,8 +647,8 @@ public partial class CartesianHeatMapView : UserControl
         if (visibleRect.Width <= 0)
             return;
 
-        var startX = visibleRect.Left;
-        var endX = visibleRect.Right;
+        var startX = drawRect.Left;
+        var endX = drawRect.Right;
         var axisY = 12.0;
         var arrowBaseX = Math.Max(startX, endX - 10);
         var halfRange = GetOuterRadiusInCartesianUnits();
