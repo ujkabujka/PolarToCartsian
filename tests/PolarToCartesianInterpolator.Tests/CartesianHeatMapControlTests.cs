@@ -60,4 +60,35 @@ public sealed class CartesianHeatMapControlTests
         Assert.Equal(12, render.PolarMesh.AngleLinesDegrees.Count);
     }
 
+    [Fact]
+    public void FindMaximumPoint_ReturnsGridMaximum()
+    {
+        var sut = new CartesianHeatMapControl();
+        sut.SetGrid(new float[,] { { 0.2f, 0.8f }, { 0.3f, 0.4f } });
+
+        var max = sut.FindMaximumPoint();
+
+        Assert.Equal(0, max.Row);
+        Assert.Equal(1, max.Column);
+        Assert.Equal(0.8f, max.Value, 6);
+    }
+
+    [Fact]
+    public void FindMaxSumRectangle_ReturnsBestRectanglePosition()
+    {
+        var sut = new CartesianHeatMapControl();
+        sut.SetGrid(new float[,]
+        {
+            { 1f, 1f, 1f },
+            { 1f, 5f, 5f },
+            { 1f, 5f, 5f }
+        });
+
+        var rect = sut.FindMaxSumRectangle(rectangleHeight: 2, rectangleWidth: 2);
+
+        Assert.Equal(1, rect.TopRow);
+        Assert.Equal(1, rect.LeftColumn);
+        Assert.Equal(20f, rect.Sum, 6);
+    }
+
 }

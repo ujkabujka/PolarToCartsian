@@ -26,6 +26,7 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
         new PropertyMetadata(0.1d));
 
     private ProbabilityDistributer? _probabilityDistributer;
+    private int _rectangleLength = 5;
 
     public ProbabilityDistributerHeatMapView()
     {
@@ -98,8 +99,19 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
 
         _probabilityDistributer.SetGrid(ExampleUsage.Create400By400SampleGrid());
         R50TextBox.Text = "0";
+        RectangleLengthTextBox.Text = _rectangleLength.ToString(CultureInfo.InvariantCulture);
         TargetProbabilityComboBox.SelectedIndex = 0;
 
+        ApplyDistribution();
+    }
+
+    private void RectangleLengthTextBox_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!int.TryParse(RectangleLengthTextBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var length) || length <= 0)
+            length = 5;
+
+        _rectangleLength = length;
+        RectangleLengthTextBox.Text = _rectangleLength.ToString(CultureInfo.InvariantCulture);
         ApplyDistribution();
     }
 
@@ -110,6 +122,20 @@ public partial class ProbabilityDistributerHeatMapView : UserControl
 
         var kernelLength = _probabilityDistributer.KernelLength;
         DisplayGrid = _probabilityDistributer.BuildFilteredGrid();
+
+        if (DisplayGrid is not null)
+        {
+            var maxPoint = CartesianHeatMapMath.FindMaximumPoint(DisplayGrid);
+            HeatMapView.MaxPointOverlay = maxPoint;
+            MaxPointTextBlock.Text = $"Max Point: r={maxPoint.Row}, c={maxPoint.Column}, T={maxPoint.Value:0.###}";
+
+            var rectLength = Math.Min(_rectangleLength, Math.Min(DisplayGrid.GetLength(0), DisplayGrid.GetLength(1)));
+            var maxRectangle = CartesianHeatMapMath.FindMaxSumRectangle(DisplayGrid, rectLength, rectLength);
+            HeatMapView.RectangleOverlay = maxRectangle;
+            MaxRectangleTextBlock.Text =
+                $"Max Rectangle: top={maxRectangle.TopRow}, left={maxRectangle.LeftColumn}, " +
+                $"center=({maxRectangle.CenterRow:0.##}, {maxRectangle.CenterColumn:0.##}), sum={maxRectangle.Sum:0.###}";
+        }
 
         SigmaTextBlock.Text = $"SigmaR: {_probabilityDistributer.SigmaR:0.###}";
         KernelTextBlock.Text = $"Kernel Length: {kernelLength}";

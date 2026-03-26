@@ -2,6 +2,61 @@ namespace PolarToCartesianInterpolator;
 
 public static class CartesianHeatMapMath
 {
+    public static GridMaxPoint FindMaximumPoint(float[,] heatMap)
+    {
+        var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
+
+        var maxValue = float.NegativeInfinity;
+        var maxRow = 0;
+        var maxCol = 0;
+
+        for (var row = 0; row < height; row++)
+        {
+            for (var col = 0; col < width; col++)
+            {
+                var value = heatMap[row, col];
+                if (value > maxValue)
+                {
+                    maxValue = value;
+                    maxRow = row;
+                    maxCol = col;
+                }
+            }
+        }
+
+        return new GridMaxPoint(maxRow, maxCol, maxValue);
+    }
+
+    public static MaxSumRectangle FindMaxSumRectangle(float[,] heatMap, int rectangleHeight, int rectangleWidth)
+    {
+        var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
+        ValidateRectangleSize(height, width, rectangleHeight, rectangleWidth);
+
+        var windowSums = CreateWindowSumGrid(heatMap, rectangleHeight, rectangleWidth);
+        var sumHeight = windowSums.GetLength(0);
+        var sumWidth = windowSums.GetLength(1);
+
+        var maxSum = float.NegativeInfinity;
+        var maxTop = 0;
+        var maxLeft = 0;
+
+        for (var row = 0; row < sumHeight; row++)
+        {
+            for (var col = 0; col < sumWidth; col++)
+            {
+                var sum = windowSums[row, col];
+                if (sum > maxSum)
+                {
+                    maxSum = sum;
+                    maxTop = row;
+                    maxLeft = col;
+                }
+            }
+        }
+
+        return new MaxSumRectangle(maxTop, maxLeft, rectangleHeight, rectangleWidth, maxSum);
+    }
+
     public static double Sum(float[,] heatMap)
     {
         var (height, width) = GetDimensionsOrThrow(heatMap, nameof(heatMap));
@@ -138,4 +193,74 @@ public static class CartesianHeatMapMath
     }
 
     private static double SanitizeForArea(double value) => double.IsFinite(value) ? value : 0.0;
+
+    private static void ValidateRectangleSize(int gridHeight, int gridWidth, int rectangleHeight, int rectangleWidth)
+    {
+        if (rectangleHeight <= 0)
+            throw new ArgumentOutOfRangeException(nameof(rectangleHeight), "Rectangle height sifirdan buyuk olmali.");
+        if (rectangleWidth <= 0)
+            throw new ArgumentOutOfRangeException(nameof(rectangleWidth), "Rectangle width sifirdan buyuk olmali.");
+        if (rectangleHeight > gridHeight || rectangleWidth > gridWidth)
+            throw new ArgumentException("Rectangle boyutu grid boyutunu asamaz.");
+    }
+
+    private static float[,] CreateWindowSumGrid(float[,] heatMap, int rectangleHeight, int rectangleWidth)
+    {
+        var height = heatMap.GetLength(0);
+        var width = heatMap.GetLength(1);
+
+        var horizontalWidth = width - rectangleWidth + 1;
+        var horizontal = new float[height, horizontalWidth];
+
+        for (var row = 0; row < height; row++)
+        {
+            var sum = 0f;
+            for (var col = 0; col < rectangleWidth; col++)
+            {
+                sum += heatMap[row, col];
+            }
+            horizontal[row, 0] = sum;
+
+            for (var col = 1; col < horizontalWidth; col++)
+            {
+                sum += heatMap[row, col + rectangleWidth - 1];
+                sum -= heatMap[row, col - 1];
+                horizontal[row, col] = sum;
+            }
+        }
+
+        var verticalHeight = height - rectangleHeight + 1;
+        var output = new float[verticalHeight, horizontalWidth];
+        for (var col = 0; col < horizontalWidth; col++)
+        {
+            var sum = 0f;
+            for (var row = 0; row < rectangleHeight; row++)
+            {
+                sum += horizontal[row, col];
+            }
+            output[0, col] = sum;
+
+            for (var row = 1; row < verticalHeight; row++)
+            {
+                sum += horizontal[row + rectangleHeight - 1, col];
+                sum -= horizontal[row - 1, col];
+                output[row, col] = sum;
+            }
+        }
+
+        return output;
+    }
+}
+
+public readonly record struct GridMaxPoint(int Row, int Column, float Value);
+
+public readonly record struct MaxSumRectangle(
+    int TopRow,
+    int LeftColumn,
+    int Height,
+    int Width,
+    float Sum)
+{
+    public double CenterRow => TopRow + ((Height - 1) / 2.0);
+    public double CenterColumn => LeftColumn + ((Width - 1) / 2.0);
 }

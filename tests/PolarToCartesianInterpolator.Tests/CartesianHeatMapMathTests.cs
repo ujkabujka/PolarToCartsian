@@ -6,6 +6,58 @@ namespace PolarToCartesianInterpolator.Tests;
 public sealed class CartesianHeatMapMathTests
 {
     [Fact]
+    public void FindMaximumPoint_ReturnsMaximumCellLocationAndValue()
+    {
+        var input = new float[,]
+        {
+            { 0.1f, 0.2f, 0.3f },
+            { 0.4f, 0.9f, 0.5f },
+            { 0.6f, 0.7f, 0.8f }
+        };
+
+        var result = CartesianHeatMapMath.FindMaximumPoint(input);
+
+        Assert.Equal(1, result.Row);
+        Assert.Equal(1, result.Column);
+        Assert.Equal(0.9f, result.Value, 6);
+    }
+
+    [Fact]
+    public void FindMaxSumRectangle_ReturnsTopLeftAndSumForBestWindow()
+    {
+        var input = new float[,]
+        {
+            { 1f, 1f, 1f, 1f },
+            { 1f, 9f, 9f, 1f },
+            { 1f, 9f, 9f, 1f },
+            { 1f, 1f, 1f, 1f }
+        };
+
+        var result = CartesianHeatMapMath.FindMaxSumRectangle(input, rectangleHeight: 2, rectangleWidth: 2);
+
+        Assert.Equal(1, result.TopRow);
+        Assert.Equal(1, result.LeftColumn);
+        Assert.Equal(2, result.Height);
+        Assert.Equal(2, result.Width);
+        Assert.Equal(36f, result.Sum, 6);
+        Assert.Equal(1.5, result.CenterRow, 6);
+        Assert.Equal(1.5, result.CenterColumn, 6);
+    }
+
+    [Fact]
+    public void FindMaxSumRectangle_WhenRectangleLargerThanGrid_Throws()
+    {
+        var input = new float[,]
+        {
+            { 1f, 2f },
+            { 3f, 4f }
+        };
+
+        Assert.Throws<ArgumentException>(() =>
+            CartesianHeatMapMath.FindMaxSumRectangle(input, rectangleHeight: 3, rectangleWidth: 2));
+    }
+
+    [Fact]
     public void SubtractFromOne_ReturnsOneMinusEachCell()
     {
         var input = new float[,]

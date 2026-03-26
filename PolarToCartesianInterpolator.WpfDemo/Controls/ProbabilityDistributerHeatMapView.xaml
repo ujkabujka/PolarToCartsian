@@ -43,6 +43,20 @@
                 <TextBlock x:Name="KernelTextBlock"
                            Margin="0,0,0,4"
                            Foreground="#374151" />
+                <TextBlock Text="Rectangle Length"
+                           FontWeight="SemiBold" />
+                <TextBox x:Name="RectangleLengthTextBox"
+                         Margin="0,6,0,10"
+                         Text="5"
+                         LostFocus="RectangleLengthTextBox_OnLostFocus" />
+                <TextBlock x:Name="MaxPointTextBlock"
+                           Margin="0,0,0,4"
+                           Foreground="#374151"
+                           TextWrapping="Wrap" />
+                <TextBlock x:Name="MaxRectangleTextBlock"
+                           Margin="0,0,0,8"
+                           Foreground="#374151"
+                           TextWrapping="Wrap" />
                 <TextBlock Text="R50 = 0 iken filtre uygulanmaz."
                            FontSize="11"
                            Foreground="#6B7280"

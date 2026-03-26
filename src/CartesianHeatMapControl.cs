@@ -96,6 +96,18 @@ public sealed class CartesianHeatMapControl
             IsBelowCutoff: !double.IsNaN(temperature) && temperature < Cutoff);
     }
 
+    public GridMaxPoint FindMaximumPoint()
+    {
+        EnsureGridIsReady();
+        return CartesianHeatMapMath.FindMaximumPoint(_grid);
+    }
+
+    public MaxSumRectangle FindMaxSumRectangle(int rectangleHeight, int rectangleWidth)
+    {
+        EnsureGridIsReady();
+        return CartesianHeatMapMath.FindMaxSumRectangle(_grid, rectangleHeight, rectangleWidth);
+    }
+
     public IReadOnlyList<LegendStop> BuildLegend(int stepCount = 5)
     {
         if (stepCount < 2)
